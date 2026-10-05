@@ -1,24 +1,9 @@
-# Product
+# Over CijferReveal
 
-<!-- impeccable:product-schema 1 -->
+CijferReveal is een browserextensie voor leerlingen die hun SOMtoday-cijfers één voor één willen openen.
 
-## Platform
-web
+De extensie verbergt een cijfer tot je zelf op **Open cijfer** klikt. Daarna laat een korte animatie het echte cijfer zien. Het cijfer wordt nooit door de extensie gekozen of veranderd. Geopende cijfers worden op je eigen apparaat bewaard.
 
-## Stack
-Door gebruiker vastgelegd: Chromium MV3, TypeScript, React, Motion, Vite, CSS en requestAnimationFrame.
+De gewone SOMtoday-pagina blijft zichtbaar en bruikbaar. De extensie is gemaakt voor Chrome, Edge, Brave en Helium op een computer. Hij werkt niet in Firefox, Safari of mobiele browsers.
 
-## Users
-Leerlingen die nieuwe cijfers in SOMtoday bewust willen onthullen.
-
-## Product Purpose
-Een vooraf bepaald schoolcijfer veilig verbergen en na een handmatige pack opening onthullen.
-
-## Operating Context
-Windows/Chromium; bestaande Angular SPA op leerling.somtoday.nl.
-
-## Capabilities and Constraints
-Lokaal, geen backend of externe assets. Inventaris bevat alleen geopende resultaatversies. README.md beschrijft de actuele release en browsergrenzen; design.md en SOMtoday-Grade-Unboxing-Recon.md bewaren historische ontwerp- en onderzoekscontext. Nieuwe individuele cijfers en gepubliceerde sterretjes vereisen geen accountgebonden validatieprofiel.
-
-## Accessibility & Inclusion
-Keyboard, focusbeheer, veilige accessible names, verminderde beweging.
+Zie [README.md](README.md) voor installatie, gebruik en hulp.

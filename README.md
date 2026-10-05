@@ -1,108 +1,60 @@
-# CijferReveal voor SOMtoday
+# CijferReveal
 
-Onthul je SOMtoday-cijfers met een pack opening: een vakkaart, een grote cijferrol met geluid en een resultaatkaart. Geopende cijfers komen in je **Inventaris**. De normale SOMtoday-navigatie blijft beschikbaar.
-
-**Het resultaat staat vooraf vast.** De rol bevat voorbeeldcijfers; hij landt altijd op het gekoppelde echte resultaat, ook als dat `*` is. De extensie verandert geen cijfers bij SOMtoday en plaatst geen opmerkingen of oordeel bij je resultaat.
+Met CijferReveal open je SOMtoday-cijfers één voor één, met een korte animatie en geluid. Je cijfer staat al vast. De extensie verandert het nooit. Open cijfers vind je terug in de inventaris.
 
 ## Installeren
 
-Je hebt geen Node.js of programmeerkennis nodig om de release te installeren.
+Dit werkt met Chrome, Edge, Brave en Helium op een computer. Je hoeft niet te kunnen programmeren.
 
-1. Download **pack-opening-voor-somtoday.zip** bij de [nieuwste release](https://github.com/js664/CijferReveal/releases/latest). Gebruik de release-ZIP, niet GitHubs knop *Download ZIP* voor de broncode.
-2. Pak de ZIP volledig uit in een vaste map. In die map moeten onder andere `manifest.json`, `content.js`, `worker.js` en de map `assets` staan. Bewaar deze map zolang je de extensie gebruikt.
+1. Download **pack-opening-voor-somtoday.zip** bij de [nieuwste versie](https://github.com/js664/CijferReveal/releases/latest). Download dus niet de broncode-ZIP van GitHub.
+2. Pak de ZIP uit in een map en laat de map daar staan.
 3. Open de extensiepagina van je browser:
+   - Chrome: `chrome://extensions`
+   - Edge: `edge://extensions`
+   - Brave: `brave://extensions`
+   - Helium: `helium://extensions` (werkt dit niet, probeer `chrome://extensions`)
+4. Zet **Ontwikkelaarsmodus** aan.
+5. Klik op **Uitgepakte extensie laden** en kies de map die je net hebt uitgepakt.
+6. Herlaad de SOMtoday-pagina. Ga daarna naar **Cijfers**.
 
-   | Browser | Adres |
-   | --- | --- |
-   | Chrome / Chromium | `chrome://extensions` |
-   | Microsoft Edge | `edge://extensions` |
-   | Brave | `brave://extensions` |
-   | Helium | `helium://extensions` — probeer `chrome://extensions` als dat adres niet werkt |
+## Zo werkt het
 
-4. Schakel **Ontwikkelaarsmodus** in.
-5. Kies **Uitgepakte extensie laden** (*Load unpacked*) en selecteer de uitgepakte map waarin `manifest.json` staat.
-6. **Herlaad alle reeds geopende SOMtoday-tabs.** De detectie begint bij het laden van de pagina; alleen de extensie laden of een SPA-tab wisselen is niet genoeg.
-7. Open [SOMtoday](https://leerling.somtoday.nl/), log normaal in en ga naar **Cijfers**.
+- Bij een cijfer dat je nog niet hebt geopend staat **?**. Klik op **Open cijfer**.
+- Klik op **Open Cijfer** of druk op Enter om de animatie te starten.
+- Daarna zie je het echte cijfer. Ook een `*` wordt gewoon als `*` getoond.
+- Druk op Enter om naar het volgende cijfer te gaan. Escape sluit het scherm.
+- In **Inventaris** vind je de cijfers die je al hebt geopend.
+- Klik op het extensie-icoon om geluid of beweging aan te passen.
 
-Deze laadstappen volgen de officiële instructies voor [Chrome](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world) en [Edge](https://learn.microsoft.com/en-us/microsoft-edge/extensions/getting-started/extension-sideloading).
+## Geen knop om te openen?
 
-### Bijwerken
+1. Kijk of CijferReveal aan staat en SOMtoday mag gebruiken.
+2. Herlaad de extensie en daarna de SOMtoday-pagina.
+3. Open **Cijfers** of bekijk de losse resultaten van een vak.
+4. Staat er **Cijfer nog niet gekoppeld**? Klik op **Pagina opnieuw laden**.
+5. Werkt het nog steeds niet? Meld je browser, versienummer en wat je ziet bij [Issues](https://github.com/js664/CijferReveal/issues). Stuur geen wachtwoorden, cookies, tokens of leerlingnummers mee.
 
-Pak de nieuwe release uit over dezelfde extensiemap, klik op het herlaadicoon van CijferReveal op de extensiepagina en herlaad SOMtoday. Verwijder de extensie niet om bij te werken: je lokale inventaris en instellingen kunnen dan verloren gaan.
+Nieuwe cijfers en gewijzigde cijfers worden opnieuw herkend. Als een `*` later een cijfer wordt, kun je die nieuwe versie ook openen. De oude versie blijft in je inventaris staan. Bij twijfel blijft een cijfer verborgen.
 
-## Gebruiken
+## Bijwerken
 
-- Een ongeopend, gekoppeld cijfer toont **?** op zijn normale plek. Beweeg over de kaart of navigeer met Tab naar **Open cijfer**.
-- Eerst verschijnt een vakkaart. Klik op **Open Cijfer** of druk op **Enter** om de rol te starten.
-- Het echte cijfer staat op de winnende rolkaart en verschijnt vervolgens op de resultaatkaart. Een `*` wordt als `*` onthuld.
-- **Enter** gaat na de onthulling naar de volgende vakkaart wanneer er nog cijfers klaarstaan. **Escape** sluit de vakkaart of het resultaat.
-- **Inventaris** toont je geopende resultaten met zoeken, filters en sortering.
-- Via het extensie-icoon stel je geluid, volume en verminderde beweging in. De systeemvoorkeur voor verminderde beweging wordt ook gerespecteerd.
+Download en pak de nieuwste release uit over de bestaande map. Klik daarna op het herlaadicoon naast CijferReveal op de extensiepagina. Herlaad ook SOMtoday. Verwijder de oude extensie niet: dan kan je inventaris verdwijnen.
 
-Bij een verse installatie zijn ook bestaande, zichtbaar gekoppelde individuele cijfers te openen. Nieuwe resultaten worden automatisch herkend wanneer SOMtoday ze normaal ophaalt. Een `*` die later een cijfer wordt, of een bijgewerkt cijfer, krijgt een nieuwe opening. Eerdere geopende versies blijven bewaard in je inventaris.
+## Privacy en ondersteuning
 
-## Werkt er geen openknop?
+Je cijfers en instellingen blijven op je eigen apparaat. Er is geen account bij CijferReveal en de extensie stuurt je gegevens niet naar de maker. De extensie leest alleen cijfergegevens die SOMtoday zelf al ophaalt.
 
-1. Controleer of de extensie ingeschakeld is en toegang tot `leerling.somtoday.nl` heeft.
-2. Herlaad de extensie én de SOMtoday-pagina. Log zo nodig opnieuw in via SOMtoday zelf.
-3. Kijk op **Cijfers** of open de individuele resultaten van het betreffende vak. De extensie verwerkt normaal opgehaalde cijferresponses; hij vraagt geen cijfers op met eigen inloggegevens.
-4. Zie je **Cijfer nog niet gekoppeld**? Klik op **Pagina opnieuw laden**. Deze knop herlaadt daadwerkelijk SOMtoday.
-5. Blijft het probleem bestaan, meld dan je browser/versie, extensieversie, cijferpagina en de fouttekst via [Issues](https://github.com/js664/CijferReveal/issues). Deel geen tokens, cookies, leerling-ID's of onbewerkte netwerkexports. Maak eventuele schermafbeeldingen anoniem.
-
-Een onduidelijke koppeling wordt niet gegokt: twee identieke toetskaarten kunnen extra context vereisen. Je hoeft voor een detectieprobleem niet meteen je inventaris te wissen.
-
-## Ondersteuning en grenzen
-
-- Gericht op **desktopbrowsers op basis van Chromium**, met Chromium 111 of nieuwer en Manifest V3. De pakketcode bevat geen persoonlijk account, school-ID of browserprofiel.
-- Chrome/Chromium, Edge, Brave en Helium kunnen uitgepakte Chromium-extensies laden. Op beheerde schoollaptops kan een beheerder dit blokkeren.
-- Deze release is geen Firefox-, Safari- of mobiele-browserextensie.
-- Individuele recente cijfers en vakresultaatkaarten worden gekoppeld aan normale SOMtoday-responses. Zowel voortgangs- als examendossierresponses worden herkend.
-- Punt- en kommanotatie, cijfers met één of twee decimalen, verschillende wegingnotaties, sterretjes, dynamische resultaten en meerdere accounts zijn meegenomen in de regressietests.
-- Overzichtstabellen, gemiddelden en rapportwaarden zijn geen packs en blijven afgeschermd. Niet-ondersteunde of dubbelzinnige kaarten blijven verborgen.
-- Tests gebruiken synthetische SOMtoday-responses en de echte MV3-extensie in Chromium. Dat bewijst geen werking voor iedere school of toekomstige wijziging van SOMtoday.
-
-## Privacy
-
-Geen backend, accountkoppeling, analytics, cloudsync of ingebouwde client secrets. Instellingen en geopende resultaten staan lokaal in `chrome.storage.local` en worden niet naar de ontwikkelaar gestuurd.
-
-De extensie observeert uitsluitend ondersteunde cijferresponses die SOMtoday zelf ophaalt via GET. Zij leest geen requestheaders, cookies, toegangstokens, wachtwoorden of leerlingprofielen. Alleen noodzakelijke cijfermetadata wordt verwerkt; instellingen en resultaten blijven lokaal. Account- en resultaatidentiteiten worden met een willekeurige lokale salt gehasht. Dat is **geen versleuteling** van de opgeslagen cijfers.
-
-De browserpermissies zijn beperkt tot lokale opslag en de SOMtoday-leerlingwebsite. Geluid wordt lokaal meegeleverd en begint pas na je klik of toetsdruk.
+CijferReveal is gemaakt voor computerbrowsers die op Chromium werken. Het is niet gemaakt voor Firefox, Safari of mobiele browsers. Sommige scholen kunnen extensies blokkeren. We hebben tests gedaan met voorbeeldcijfers; dat garandeert niet dat elke school of toekomstige SOMtoday-versie werkt.
 
 ## Zelf bouwen
 
-Gebruik Node.js **22.12 of nieuwer** en npm. De build werkt op Windows, macOS en Linux; er is geen PowerShell nodig om de ZIP te maken.
+Dit is alleen nodig als je de code wilt aanpassen. Installeer [Node.js](https://nodejs.org/) versie 22.12 of nieuwer. Open daarna een terminal in de map en voer uit:
 
 ```sh
-git clone https://github.com/js664/CijferReveal.git
-cd CijferReveal
 npm ci
 npm run build
 ```
 
-Laad de map `dist` als uitgepakte extensie. Dezelfde build maakt `pack-opening-voor-somtoday.zip`, met `manifest.json` direct in de ZIP-root.
+De map `dist` is de extensie. Je kunt die laden via **Uitgepakte extensie laden**. Andere opdrachten voor ontwikkelaars staan in `package.json`.
 
-### Ontwikkelen en controleren
-
-```sh
-npm run check:secrets
-npm run typecheck
-npm run lint
-npm test
-npm run build
-npm run build:dev
-npm run validate
-npx playwright install chromium
-npm run test:e2e
-npm audit
-```
-
-`npm run dev` biedt een geïsoleerde preview op `http://127.0.0.1:5173/tester.html`. De tester gebruikt fictieve cijfers en benadert geen echt SOMtoday-account. GitHub Actions voert de geheimencontrole, builds en regressietests opnieuw uit.
-
-De geheimencontrole blokkeert herkenbare credentials en persoonlijke bestandspaden zonder hun waarden in logs af te drukken. Lokale `.env`-bestanden, sleutels, netwerkexports, browsertraces, testcaptures en het losse lokale test-userscript worden niet gepubliceerd.
-
-Wil je de controle ook vóór iedere commit uitvoeren? Activeer de meegeleverde hook met `git config core.hooksPath .githooks`. Die controleert de daadwerkelijk gestagede inhoud.
-
----
-
-Een onafhankelijk project, niet verbonden met of goedgekeurd door SOMtoday. Bewaar inloggegevens uitsluitend in de normale SOMtoday-inlogomgeving.
+CijferReveal is een onafhankelijk project. SOMtoday maakt of controleert deze extensie niet.
