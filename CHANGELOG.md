@@ -7,7 +7,7 @@
 - Bestaande geopende cijfers worden veilig gekoppeld zodra dezelfde gegevens opnieuw worden herkend. De inventaris wordt niet gewist.
 - De herkenning van vakkaarten, herkansingen, datums en cijfernotaties is uitgebreid.
 
-De tests bewijzen deze situaties met voorbeeldgegevens. 
+De tests bewijzen deze situaties met voorbeeldgegevens.
 
 ## Versie 0.2.1 — 5 oktober 2026
 
