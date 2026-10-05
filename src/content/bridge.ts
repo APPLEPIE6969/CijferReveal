@@ -1,9 +1,9 @@
 import {validateObservation} from '../somtoday/schemas';
-import {digest} from '../somtoday/identity';
+import {digest,recordIdentityKey} from '../somtoday/identity';
 import type {ResultRecord} from '../somtoday/types';
 import type {State} from '../state/schema';
 import {command} from '../state/repository';
-export interface LiveRecord { record:ResultRecord;key:string;scope:string;version:string; }
+export interface LiveRecord { record:ResultRecord;key:string;scope:string;version:string;rawKey:string;rawVersion:string; }
 export class Bridge {
  records=new Map<string,LiveRecord>();activeScope:string|null=null;state:State|null=null;
  private chain=Promise.resolve();private waiting:ReturnType<typeof validateObservation>[]=[];private disposed=false;
@@ -20,30 +20,33 @@ export class Bridge {
   return this.chain;
  }
  private hello(){if(this.state)window.postMessage({protocol:'po/init',salt:this.state.salt},location.origin);}
+ private rebind(){for(const live of this.records.values()){const alias=this.state?.aliases?.[live.rawKey],current=alias?.rawVersion===live.rawVersion;live.key=current?alias.logicalKey:live.rawKey;live.version=current?this.state?.records[live.key]?.version??live.rawVersion:live.rawVersion;}}
  private async consume(message:NonNullable<ReturnType<typeof validateObservation>>){
  if(this.disposed)return;
  if(!this.state){if(this.waiting.length<32)this.waiting.push(message);return;}
+ const scopeChanged=!!message.scope&&this.activeScope!==message.scope;
  if(message.scope){if(this.activeScope&&this.activeScope!==message.scope){this.records.clear();this.waiting=[];}this.activeScope=message.scope;}
  const inputs:LiveRecord[]=[];
  for(const observed of message.records){
- const known=this.records.get(`${observed.family}:${observed.id}`);
+ const known=this.records.get(recordIdentityKey(observed));
  // Overview context cannot be assumed to be account identity; correlate with an already scoped record.
  const scope=message.scope??known?.scope;if(!scope)continue;
  // Unscoped overview/average responses cannot prove account identity or a
  // revision. Retain the latest canonical scoped response for a known result.
- const record=message.scope?observed:known!.record;
- const key=await digest(this.state.salt,scope,record.family,record.id);
+ const record=message.scope&&message.surface!=='overview'?observed:known?.record??observed;
+ const key=record.variant?await digest(this.state.salt,scope,record.family,record.id,record.variant):await digest(this.state.salt,scope,record.family,record.id);
  const version=await digest(this.state.salt,'version',record.value,record.weight,record.description,record.date,record.period,record.testCode,record.columnType??'',record.selfType,record.subject,record.subjectId,String(record.isCijfer),String(record.isLabel),String(record.aggregate));
- const live={record,key,scope,version};inputs.push(live);this.records.set(`${record.family}:${record.id}`,live);
+ const live={record,key,scope,version,rawKey:key,rawVersion:version};inputs.push(live);this.records.set(recordIdentityKey(record),live);
  }
  if(!message.scope&&inputs.length<message.records.length&&this.waiting.length<32)this.waiting.push(message);
- if(inputs.length){this.state=await command({kind:'observe',inputs,scope:message.scope??inputs[0].scope,surface:message.surface});this.changed();}
+ if(inputs.length){this.state=await command({kind:'observe',inputs,scope:message.scope??inputs[0].scope,surface:message.surface});this.rebind();this.changed();}
+ else if(scopeChanged)this.changed();
  if(message.scope&&this.waiting.length){const pending=this.waiting.splice(0);for(const p of pending)if(p)await this.consume(p);}
  }
  refresh():Promise<void>{
   // Storage refreshes and network observations share one queue. Otherwise a
   // delayed read can overwrite the state of a freshly detected grade.
-  const task=this.chain.then(async()=>{if(this.disposed)return;const next=await command({kind:'read'});if(this.state?.salt!==next.salt){this.records.clear();this.activeScope=null;this.waiting=[];}this.state=next;this.hello();this.changed();});
+  const task=this.chain.then(async()=>{if(this.disposed)return;const next=await command({kind:'read'});if(this.state?.salt!==next.salt){this.records.clear();this.activeScope=null;this.waiting=[];}this.state=next;this.rebind();this.hello();this.changed();});
   this.chain=task.catch(()=>{});return task;
  }
  dispose(){this.disposed=true;window.removeEventListener('message',this.listener);this.records.clear();}

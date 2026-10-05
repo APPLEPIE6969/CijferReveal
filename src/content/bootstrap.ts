@@ -12,7 +12,8 @@ let cssMeasured=false;
 const OWNER='sl-laatste-resultaat-item,sl-vakresultaat-item';
 const unsupportedOwners=new WeakMap<HTMLElement,string|null>();
 const presentations=new Map<HTMLElement,Presentation>();let gradeRoot:HTMLElement|null=null,gradeObserver:MutationObserver|null=null,scheduled=false,failed=false;
-const bridge=new Bridge(()=>{failed=false;schedule();},()=>{failed=true;schedule();});
+let lastScope:string|null=null;
+const bridge=new Bridge(()=>{if(lastScope&&lastScope!==bridge.activeScope)experience.close();lastScope=bridge.activeScope;failed=false;schedule();},()=>{failed=true;schedule();});
 const experience=new Experience(()=>bridge.state,()=>bridge.refresh());
 const retryGradeDetection=()=>window.location.reload();
 const INVENTORY_HISTORY='__poInventory';let inventoryTab:InventoryTabController|null=null,pendingInventory=false,inventoryURL='';
@@ -41,13 +42,14 @@ function reconcileOwner(owner:HTMLElement){
  }
  if(unsupportedOwners.has(owner)){const original=unsupportedOwners.get(owner);if(original===null)owner.removeAttribute('aria-hidden');else if(original!==undefined)owner.setAttribute('aria-hidden',original);unsupportedOwners.delete(owner);owner.classList.remove('po-unsupported-owner');}
  diagnose(owner);
- const native=nativeCardValues(owner);const tuple={subject:owner.querySelector('.titel')?.textContent??'',subtitle:owner.querySelector('.subtitel')?.textContent??'',weight:native.weight,value:native.value};
+ const native=nativeCardValues(owner);const tuple={subject:owner.querySelector('.titel')?.textContent??'',subtitle:owner.querySelector('.subtitel')?.textContent??'',weight:native.weight,value:native.value,kind:owner.matches('sl-vakresultaat-item')?'subject' as const:'recent' as const,family:owner.closest('sl-examenresultaten')?'exam':owner.closest('sl-voortgangsresultaten')?'progression':undefined};
  const live=[...bridge.records.values()].filter(r=>r.scope===bridge.activeScope);
- const result=failed?null:joinCard(tuple,live.map(x=>x.record));
+ const result=failed?null:joinCard(tuple,live.map(x=>x.record),record=>live.find(x=>x.record===record)!.key);
  diagnosticStage('classification',owner.tagName.toLowerCase(),isConcealed(owner));
- const selected=result?live.find(x=>x.record===result):null;const stored=selected?bridge.state?.records[selected.key]:null;
- if(old){old.update(result,stored?.state,stored?.display,(display,origin)=>{if(bridge.activeScope)experience.open(display,origin,bridge.activeScope);},retryGradeDetection);diagnosticStage('safe-presentation',owner.tagName.toLowerCase(),isConcealed(owner));return;}
- const presentation=presentCard(owner,result,stored?.state,stored?.display,(display,origin)=>{if(bridge.activeScope)experience.open(display,origin,bridge.activeScope);},retryGradeDetection);presentations.set(owner,presentation);diagnosticStage('safe-presentation',owner.tagName.toLowerCase(),isConcealed(owner));
+ const selected=result?live.find(x=>x.record===result):null;const candidate=selected?bridge.state?.records[selected.key]:null;const stored=candidate?.version===selected?.version?candidate:undefined;
+ const linkProblem=result?'matched':failed?'storage':live.length?'metadata':'no-api';
+ if(old){old.update(result,stored?.state,stored?.display,(display,origin)=>{if(bridge.activeScope)experience.open(display,origin,bridge.activeScope);},retryGradeDetection);old.host.dataset.poLinkProblem=linkProblem;diagnosticStage('safe-presentation',owner.tagName.toLowerCase(),isConcealed(owner));return;}
+ const presentation=presentCard(owner,result,stored?.state,stored?.display,(display,origin)=>{if(bridge.activeScope)experience.open(display,origin,bridge.activeScope);},retryGradeDetection);presentation.host.dataset.poLinkProblem=linkProblem;presentations.set(owner,presentation);diagnosticStage('safe-presentation',owner.tagName.toLowerCase(),isConcealed(owner));
 }
 function schedule(){if(scheduled)return;scheduled=true;queueMicrotask(()=>{scheduled=false;reconcile();});}
 function reconcile(){

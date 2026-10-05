@@ -1,8 +1,14 @@
+import type {ResultRecord} from './types';
+export function recordIdentityKey(record:ResultRecord):string{return JSON.stringify([record.family,record.id,record.variant??null]);}
 export function getCanonicalResultIdentity(record: unknown): {id:string;type:string} | null {
  if(!record || typeof record!=='object')return null;
  const r=record as Record<string,unknown>;
  if(!Array.isArray(r.links))return null;
- const links=r.links.filter(l=>l&&typeof l==='object'&&l.rel==='self');
+ const self=r.links.filter(l=>l&&typeof l==='object'&&l.rel==='self');
+ // SOMtoday's own identity helper falls back to koppeling. Accept that only
+ // for the two known individual result types with an exact matching link.
+ const individual=r.$type==='resultaten.RGeldendVoortgangsdossierResultaat'||r.$type==='resultaten.RGeldendExamendossierResultaat';
+ const links=self.length?self:individual?r.links.filter(l=>l&&typeof l==='object'&&l.rel==='koppeling'&&l.type===r.$type):[];
  if(links.length!==1)return null;
  const l=links[0];
  // SOMtoday's live self links use safe integer IDs; normalize before hashing.

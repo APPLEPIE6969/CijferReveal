@@ -27,12 +27,14 @@ export function queue(state:State,scope:string){return Object.values(state.recor
 export function markOpened(state:State,key:string,version:string,scope:string,now=Date.now(),generation=state.resetGeneration){
  const r=state.records[key];if(generation!==state.resetGeneration||!r||r.scope!==scope||r.state!=='pending'||r.version!==version||!r.display)throw new Error('Cijfer is gewijzigd. Opnieuw controleren.');
  r.state='opened';state.collection.push({...r.display,scope,openedAt:now});
+ for(const alias of Object.values(state.aliases))if(alias.scope===scope&&alias.logicalKey===key)alias.openedSignature=alias.signature;
 }
 export function resetOpenedResults(state:State){
  // Keep identities and observations so already loaded pages can reopen packs
  // immediately. A fresh salt would discard those mappings until a new GET.
  state.resetGeneration++;
  state.collection=[];state.coverage={};state.settings={...defaultSettings};
+ for(const alias of Object.values(state.aliases))delete alias.openedSignature;
  for(const r of Object.values(state.records)){
   if(['opened','baseline','pending','observed-nonnumeric'].includes(r.state)){
    r.state=r.display?'pending':'unresolved';r.lastResolvedState=r.numeric?'pending':'observed-nonnumeric';

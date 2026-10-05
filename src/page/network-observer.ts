@@ -16,7 +16,7 @@ function observe(url:string,method:string,read:()=>Promise<unknown>){
  const resource=matchResource(url,location.origin);if(!resource)return;
  // Read a fetch clone / completed XHR immediately, before an XHR can be reused.
  void (async()=>{try{
- const records=projectResponse(await read(),resource);if(!records.length)return;
+ const records=projectResponse(await read(),resource);if(!records.length&&!resource.scopeInput)return;
  const publish=()=>{void (async()=>{try{
  const scope=resource.scopeInput&&salt?await digest(salt,'account',resource.scopeInput):null;
  const message:Observation={protocol:'po/1',surface:resource.surface,scope,records,complete:false};

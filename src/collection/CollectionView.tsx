@@ -2,12 +2,13 @@ import {memo,useEffect,useMemo,useRef,useState,type PointerEvent} from 'react';
 import {motion,useReducedMotion} from 'motion/react';
 import type {CollectionEntry} from '../state/schema';
 import {tierFor} from '../opening/tiers';
+import {parseSomtodayDate} from '../somtoday/date-parser';
 import {filterInventory,inventoryStats,inventorySubjects,tierLabel,type InventorySort} from './model';
 
 const numberFormat=new Intl.NumberFormat('nl-NL',{minimumFractionDigits:1,maximumFractionDigits:1});
 const openedFormat=new Intl.DateTimeFormat('nl-NL',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-function dateLabel(value:string){const date=new Date(value);return value&& !Number.isNaN(date.getTime())?new Intl.DateTimeFormat('nl-NL',{day:'numeric',month:'short'}).format(date):'Datum onbekend';}
-function fullDateLabel(value:string){const date=new Date(value);return value&&!Number.isNaN(date.getTime())?new Intl.DateTimeFormat('nl-NL',{day:'numeric',month:'long',year:'numeric'}).format(date):'Datum onbekend';}
+function dateLabel(value:string){const date=parseSomtodayDate(value);return value&& !Number.isNaN(date.getTime())?new Intl.DateTimeFormat('nl-NL',{day:'numeric',month:'short'}).format(date):'Datum onbekend';}
+function fullDateLabel(value:string){const date=parseSomtodayDate(value);return value&&!Number.isNaN(date.getTime())?new Intl.DateTimeFormat('nl-NL',{day:'numeric',month:'long',year:'numeric'}).format(date):'Datum onbekend';}
 function openedLabel(value:number){const date=new Date(value);return Number.isNaN(date.getTime())?'Datum onbekend':openedFormat.format(date);}
 function subjectMark(subject:string){return subject.trim().split(/\s+/).slice(0,2).map(word=>word[0]).join('').toLocaleUpperCase('nl-NL')||'•';}
 function weightLabel(weight:string){const normalized=weight.trim().replace(/\s*[x×]$/i,'');return normalized?`${normalized}x`:null;}

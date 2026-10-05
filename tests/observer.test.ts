@@ -15,3 +15,9 @@ it('preserves original fetch rejection',async()=>{const error=new Error('page fa
 it('XHR preserves open/send arguments, responseType and existing callbacks',async()=>{
  const open=vi.fn(),send=vi.fn();XMLHttpRequest.prototype.open=open;XMLHttpRequest.prototype.send=send;await import('../src/page/network-observer');const xhr=new XMLHttpRequest(),callback=vi.fn();xhr.onload=callback;xhr.responseType='json';xhr.open('GET',`${location.origin}/rest/v1/geldendvoortgangsdossierresultaten/leerling/fixture`,true);xhr.send();expect(open.mock.calls[0]).toEqual(['GET',`${location.origin}/rest/v1/geldendvoortgangsdossierresultaten/leerling/fixture`,true]);expect(send).toHaveBeenCalledOnce();expect(xhr.responseType).toBe('json');expect(xhr.onload).toBe(callback);xhr.dispatchEvent(new Event('load'));expect(callback).toHaveBeenCalledOnce();
 });
+it('an empty recent response still announces the student scope',async()=>{
+ window.fetch=vi.fn(async()=>new Response(JSON.stringify({items:[]})));
+ const post=vi.spyOn(window,'postMessage');await import('../src/page/network-observer');window.dispatchEvent(new MessageEvent('message',{source:window,origin:location.origin,data:{protocol:'po/init',salt:'0'.repeat(64)}}));
+ await window.fetch(`${location.origin}/rest/v1/geldendvoortgangsdossierresultaten/leerling/another-student`);
+ await vi.waitFor(()=>expect(post.mock.calls.some(call=>{const data=call[0] as {protocol?:string;scope?:string;records?:unknown[]};return data.protocol==='po/1'&&/^[a-f0-9]{64}$/.test(data.scope??'')&&data.records?.length===0;})).toBe(true));
+});

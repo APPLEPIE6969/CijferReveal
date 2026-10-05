@@ -29,7 +29,7 @@ const html=`<!doctype html><html lang="nl"><meta charset="UTF-8"><style>body{mar
 const fixtureHtml=html.replace('</style>',`:root{--bg-base:#1b1f22;--bg-elevated-weak:#252b2f;--border-weak:#3b444b;--text-base:#e2e6e9;--text-muted:#aeb8c0;color-scheme:dark}body{background:var(--bg-base);color:var(--text-base);font-family:"Open Sans",sans-serif}.fixture-header{display:flex;align-items:center;height:64px;padding:0 24px;background:#20262a;font-size:20px;font-weight:600}sl-tab-bar{gap:12px;background:var(--bg-elevated-weak);overflow-x:auto}sl-tab{color:var(--text-muted);flex-shrink:0}sl-tab[aria-selected="true"]{color:var(--text-base);border-color:#80b5ed}sl-cijfers{max-width:1180px;margin:24px auto}.root{background:var(--bg-elevated-weak)}.subtitel{color:var(--text-muted)}@media(max-width:600px){sl-tab-bar{gap:0;padding:0 8px}sl-tab{padding:0 8px}} </style>`).replace('<sl-tab-bar role="tablist">','<header class="fixture-header">SOMtoday</header><sl-tab-bar role="tablist">');
 async function launch(seed=false,build='dist',stars=false,variant=null){
  const dir=await mkdtemp(resolve(tmpdir(),'po-extension-'));
- const context=await chromium.launchPersistentContext(dir,{channel:'chromium',headless:true,args:[`--disable-extensions-except=${resolve(build)}`,`--load-extension=${resolve(build)}`]});
+ const context=await chromium.launchPersistentContext(dir,{channel:'chromium',headless:true,timezoneId:variant?.timezone,args:[`--disable-extensions-except=${resolve(build)}`,`--load-extension=${resolve(build)}`]});
  let worker=context.serviceWorkers()[0];if(!worker)worker=await context.waitForEvent('serviceworker');
  const id=worker.url().split('/')[2];
  if(seed)await worker.evaluate(async data=>{await chrome.storage.local.set({poState:data});},{schema:2,salt,records:{[key]:{key,scope,version,state:'pending',numeric:true,firstSeen:1,display}},coverage:{[scope]:{overview:true,subject:true,armed:true}},collection:[],settings:{sound:false,volume:.7,motion:'system'}});
@@ -44,8 +44,9 @@ async function launch(seed=false,build='dist',stars=false,variant=null){
  if(variant){
   let body=fixtureHtml.replace(JSON.stringify(card),JSON.stringify(variant.card)).replaceAll('fixture-student',variant.student);
   if(variant.subject)body=body.replaceAll('sl-laatsteresultaten','sl-vakresultaten');
+  if(variant.endpoint)body=body.replace(`/rest/v1/geldendvoortgangsdossierresultaten/leerling/${variant.student}`,variant.endpoint);
   if(variant.exam)body=body.replaceAll('geldendvoortgangsdossierresultaten','geldendexamendossierresultaten');
-  await context.route('https://leerling.somtoday.nl/**',route=>route.fulfill({status:200,contentType:route.request().url().includes('/rest/')?'application/json':'text/html',body:route.request().url().includes('/rest/')?JSON.stringify({items:[variant.raw]}):body}));
+  await context.route('https://leerling.somtoday.nl/**',route=>route.fulfill({status:200,contentType:route.request().url().includes('/rest/')?'application/json':'text/html',body:route.request().url().includes('/rest/')?JSON.stringify(variant.overview?{vakResultaten:[{perioden:[{resultaten:[variant.raw]}]}]}:{items:[variant.raw]}):body}));
  }
  const page=await context.newPage();await page.goto('https://leerling.somtoday.nl/cijfers');
  return {page,context,worker,id,dispose:async()=>{await context.close();await rm(dir,{recursive:true,force:true});}};
@@ -235,4 +236,126 @@ test('mobile landing respects its CSS gap and Enter advances into the next subje
  expect(offset).toBeLessThan(1);await expect(page.locator('.po-grade')).toHaveText('*');
  await page.keyboard.press('Enter');await expect(page.locator('.po-preview h2')).toHaveText('Nederlands');await expect(page.locator('.po-preview .po-grade')).toHaveCount(0);
  await page.keyboard.press('Escape');await expect(page.locator('.po-opening-overlay')).toHaveCount(0);
+});
+
+for(const [label,days,marker] of [['Vandaag',0],['Gisteren',1],['1 okt',null],['1 okt',null,true]]){
+ test(`a fresh unrelated account with one ${label} grade${marker?' and a format marker':''} can open its real result`,async()=>{
+  const date=days===null?new Date(2026,9,1,12):new Date();date.setHours(12,0,0,0);if(days!==null)date.setDate(date.getDate()-days);
+  const student=`unrelated-${days}-student`,r={...raw,formattedResultaat:marker?'7,2 !':'7,2',formattedEerstePoging:marker?'7,2 !':'7,2',datumInvoerEerstePoging:date.toISOString(),weging:1,omschrijving:'Eerste toets',additionalObjects:{vaknaam:'Engels',vakuuid:'unrelated-subject',resultaatkolom:543210}};
+  const c=card.replaceAll('Wiskunde A','Engels').replaceAll('8,3','7,2').replaceAll('4 okt · Hoofdstuk 3',`${label} • Eerste toets`).replaceAll('2x','1x');
+  const f=await launch(false,'dist',false,{student,raw:r,card:c});try{
+   await f.page.emulateMedia({reducedMotion:'reduce'});await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(1);await expect(f.page.getByText('Cijfer nog niet gekoppeld')).toHaveCount(0);
+   await f.page.locator('.po-safe-native').hover();await f.page.getByRole('button',{name:'Open cijfer'}).click();
+   const cdp=await f.context.newCDPSession(f.page);await clickAXButton(cdp,'Open Cijfer');
+   await expect.poll(async()=> (await cdp.send('Accessibility.getFullAXTree')).nodes.filter(n=>!n.ignored).map(n=>n.name?.value??'').join('\n')).toContain('Cijfer 7,2');
+   const state=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);
+   expect(state.collection).toHaveLength(1);expect(state.collection[0]).toMatchObject({value:'7,2',grade:7.2,scope:hash(state.salt,'account',student)});
+  }finally{await f.dispose();}
+ });
+}
+
+test('real progression subject endpoint and test-title card work without a recent feed',async()=>{
+ const student='subject-only-student',c=card.replaceAll('sl-laatste-resultaat-item','sl-vakresultaat-item').replaceAll('<div class="titel">Wiskunde A</div>','<div class="titel">Hoofdstuk 3</div>').replaceAll('4 okt · Hoofdstuk 3','4 okt');
+ const f=await launch(false,'dist',false,{student,raw,card:c,subject:true,endpoint:`/rest/v1/geldendvoortgangsdossierresultaten/vakresultaten/${student}/vak/fixture-subject/lichting/fixture-cohort`});
+ try{await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(1);await expect(f.page.locator('sl-vakresultaat-item .cijfer')).toHaveText('?');}finally{await f.dispose();}
+});
+
+test('a scoped overview can supply a fresh account when the recent result feed is missing',async()=>{
+ const student='overview-only-student',f=await launch(false,'dist',false,{student,raw,card,overview:true,endpoint:`/rest/v1/geldendvoortgangsdossierresultaten/leerling/cijferoverzicht/${student}`});
+ try{await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(1);const state=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);expect(Object.values(state.records)[0].scope).toBe(hash(state.salt,'account',student));}finally{await f.dispose();}
+});
+
+test('first attempt and retake reveal their own values and never queue an invisible overall grade',async()=>{
+ const student='retake-student',r={...raw,formattedResultaat:'6,0',formattedEerstePoging:'4,0',formattedHerkansing1:'8,0',datumInvoerEerstePoging:'2026-09-29T10:00:00+02:00',datumInvoerHerkansing1:raw.datumInvoerEerstePoging};
+ const first=card.replaceAll('8,3','4,0').replaceAll('4 okt','29 sep'),second=card.replaceAll('8,3','8,0');
+ const f=await launch(false,'dist',false,{student,raw:r,card:first+second});try{
+  await f.page.emulateMedia({reducedMotion:'reduce'});await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(2);
+  await f.page.locator('.po-safe-native').first().hover();await f.page.getByRole('button',{name:'Open cijfer'}).first().click();
+  const cdp=await f.context.newCDPSession(f.page),ax=async()=> (await cdp.send('Accessibility.getFullAXTree')).nodes.filter(n=>!n.ignored).map(n=>n.name?.value??'').join('\n');
+  await clickAXButton(cdp,'Open Cijfer');await expect.poll(ax).toContain('Cijfer 4,0');await clickAXButton(cdp,'Volgende openen');await clickAXButton(cdp,'Open Cijfer');await expect.poll(ax).toContain('Cijfer 8,0');
+  expect(await ax()).not.toContain('Volgende openen');const state=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);expect(state.collection.map(c=>c.value)).toEqual(['4,0','8,0']);
+ }finally{await f.dispose();}
+});
+
+test('SOMtoday merged progression and exam records keep one real open button',async()=>{
+ const student='merged-dossier-student',r={...raw,additionalObjects:{...raw.additionalObjects,resultaatkolom:543210}},f=await launch(false,'dist',false,{student,raw:r,card});
+ try{
+  const type='resultaten.RGeldendExamendossierResultaat',exam={...r,$type:type,links:[{rel:'self',id:'separate-exam-record',type}]};
+  await f.context.route('**/rest/v1/geldendexamendossierresultaten/leerling/merged-dossier-student',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items:[exam]})}));
+  await f.page.evaluate(async()=>{await fetch('/rest/v1/geldendexamendossierresultaten/leerling/merged-dossier-student');});
+  await expect.poll(async()=> Object.keys((await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState)).records).length).toBe(1);
+  await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(1);await expect(f.page.getByText('Cijfer nog niet gekoppeld')).toHaveCount(0);
+ }finally{await f.dispose();}
+});
+
+for(const timezone of ['UTC','Europe/Amsterdam','America/Los_Angeles']){
+ test(`synthetic midnight-offset October 1 grade matches SOMtoday parsing in ${timezone}`,async()=>{
+  // Synthetic API timestamp; the affected user's raw response has not been provided.
+  const student='different-october-student',r={...raw,formattedResultaat:'6,3',formattedEerstePoging:'6,3',datumInvoerEerstePoging:'2026-10-01T00:15:00+02:00',weging:4,omschrijving:'Leesstrategieën',additionalObjects:{vaknaam:'Nederlands',vakuuid:'dutch-subject',resultaatkolom:543210}};
+  const c=card.replaceAll('Wiskunde A','Nederlands').replaceAll('8,3','6,3').replaceAll('4 okt · Hoofdstuk 3','1 okt - Leesstrategieën').replaceAll('2x','4x');
+  const f=await launch(false,'dist',false,{student,raw:r,card:c,timezone});try{
+   await f.page.emulateMedia({reducedMotion:'reduce'});await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(1);await expect(f.page.locator('.po-safe-native')).toHaveAttribute('data-po-link-problem','matched');
+   await f.page.locator('.po-safe-native').hover();await f.page.getByRole('button',{name:'Open cijfer'}).click();
+   const cdp=await f.context.newCDPSession(f.page),ax=async()=> (await cdp.send('Accessibility.getFullAXTree')).nodes.filter(n=>!n.ignored).map(n=>n.name?.value??'').join('\n');
+   await expect.poll(ax).toContain('1 oktober');await clickAXButton(cdp,'Open Cijfer');await expect.poll(ax).toContain('Cijfer 6,3');
+   const state=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);expect(state.collection).toHaveLength(1);expect(state.collection[0]).toMatchObject({value:'6,3',grade:6.3,weight:'4'});
+  }finally{await f.dispose();}
+ });
+}
+
+const exactDebugRecord={id:'po-debug-progression',selfType:'resultaten.DebugResultaat',type:'resultaten.DebugResultaat',family:'progression',value:'6,3',isCijfer:true,isLabel:false,subject:'Nederlands',subjectId:'po-debug-subject',description:'Debugtoets',date:'2026-10-01T00:00:00',weight:'4x',period:'DEBUG',testCode:'PO-DEBUG',columnType:'Toetskolom',aggregate:false};
+const exactDebugExam={...exactDebugRecord,id:'po-debug-exam',family:'exam'};
+const exactDebugCard=card.replaceAll('Wiskunde A','Nederlands').replaceAll('8,3','6,3').replaceAll('4 okt · Hoofdstuk 3','1 okt • Debugtoets').replaceAll('2x','4x');
+async function injectDebug(f,records){
+ const state=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);
+ const debugScope=hash(state.salt,'account','debug-learner');
+ await f.page.evaluate(({records,scope})=>window.postMessage({protocol:'po/1',surface:'recent',scope,complete:false,records},location.origin),{records,scope:debugScope});return debugScope;
+}
+test('UNCHANGED debug userscript pair remains fail-closed without an explicit shared column identity',async()=>{
+ const f=await launch(false,'dist',false,{student:'debug-learner',raw:{},card:exactDebugCard});try{
+  await expect(f.page.locator('.po-safe-native')).toBeVisible();await injectDebug(f,[exactDebugRecord,exactDebugExam]);
+  await expect.poll(async()=>Object.keys((await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState)).records).length).toBe(2);
+  await expect(f.page.getByText('Cijfer nog niet gekoppeld')).toBeVisible();await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(0);
+ }finally{await f.dispose();}
+});
+test('PROVEN po/1 aliases share one pack, opened state, inventory entry and durable identity after reload',async()=>{
+ const records=[{...exactDebugRecord,columnId:'explicit-shared-column'},{...exactDebugExam,columnId:'explicit-shared-column'}];
+ const f=await launch(false,'dist',false,{student:'debug-learner',raw:{},card:exactDebugCard});try{
+  await f.page.emulateMedia({reducedMotion:'reduce'});await expect(f.page.locator('.po-safe-native')).toBeVisible();const debugScope=await injectDebug(f,records);
+  await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(1);
+  const pending=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);expect(Object.values(pending.records).filter(r=>r.scope===debugScope&&r.state==='pending')).toHaveLength(1);expect(Object.keys(pending.aliases)).toHaveLength(2);
+  await f.page.locator('.po-safe-native').hover();await f.page.getByRole('button',{name:'Open cijfer'}).click();const cdp=await f.context.newCDPSession(f.page),ax=async()=> (await cdp.send('Accessibility.getFullAXTree')).nodes.filter(n=>!n.ignored).map(n=>n.name?.value??'').join('\n');
+  await clickAXButton(cdp,'Open Cijfer');await expect.poll(ax).toContain('Cijfer 6,3');expect(await ax()).not.toContain('Volgende openen');
+  const openedState=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);expect(openedState.collection).toHaveLength(1);expect(Object.values(openedState.records).filter(r=>r.state==='pending')).toHaveLength(0);expect(Object.values(openedState.aliases).every(a=>a.openedSignature===a.signature)).toBe(true);
+  await f.page.keyboard.press('Escape');await f.page.reload();await expect(f.page.locator('.po-safe-native')).toBeVisible();await injectDebug(f,[...records].reverse());
+  await expect(f.page.locator('.po-safe-native')).toHaveAttribute('data-po-link-problem','matched');await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(0);await expect(f.page.locator('.cijfer')).toHaveText('6,3');
+  const reloaded=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);expect(reloaded.collection).toHaveLength(1);expect(Object.keys(reloaded.records)).toHaveLength(1);
+  await f.page.getByRole('tab',{name:'Inventaris',exact:true}).click();await expect(f.page.locator('.po-inventory-host')).toBeVisible();await expect.poll(()=>readInventory(cdp)).toMatchObject({cardCount:1,values:['6,3']});
+ }finally{await f.dispose();}
+});
+test('distinct result columns and conflicting test codes cannot be merged by identical visible metadata',async()=>{
+ for(const patch of [{columnId:'other-column'},{testCode:'OTHER-TEST'}]){
+  const f=await launch(false,'dist',false,{student:'debug-learner',raw:{},card:exactDebugCard});try{
+   await expect(f.page.locator('.po-safe-native')).toBeVisible();await injectDebug(f,[{...exactDebugRecord,columnId:'first-column'},{...exactDebugExam,columnId:'first-column',...patch}]);
+   await expect.poll(async()=>Object.keys((await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState)).records).length).toBe(2);
+   await expect(f.page.getByText('Cijfer nog niet gekoppeld')).toBeVisible();await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(0);
+  }finally{await f.dispose();}
+ }
+});
+
+test('legacy opened raw dossier entries migrate through the real bridge without duplicate inventory or replay',async()=>{
+ const f=await launch(false,'dist',false,{student:'debug-learner',raw:{},card:exactDebugCard});try{
+  await expect(f.page.locator('.po-safe-native')).toBeVisible();
+  const state=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState),account=hash(state.salt,'account','debug-learner');
+  const rawVersion=hash(state.salt,'version','6,3','4x','Debugtoets','2026-10-01T00:00:00','DEBUG','PO-DEBUG','Toetskolom','resultaten.DebugResultaat','Nederlands','po-debug-subject','true','false','false');
+  state.records={};state.collection=[];delete state.aliases;
+  for(const [index,r] of [exactDebugRecord,exactDebugExam].entries()){
+   const rawKey=hash(state.salt,account,r.family,r.id),display={key:rawKey,version:rawVersion,subject:r.subject,description:r.description,date:r.date,weight:r.weight,value:r.value,grade:6.3};
+   state.records[rawKey]={key:rawKey,scope:account,version:rawVersion,state:'opened',numeric:true,firstSeen:index+1,display};state.collection.push({...display,scope:account,openedAt:index+10});
+  }
+  await f.worker.evaluate(async state=>chrome.storage.local.set({poState:state}),state);
+  await injectDebug(f,[{...exactDebugRecord,columnId:'explicit-shared-column'},{...exactDebugExam,columnId:'explicit-shared-column'}]);
+  await expect(f.page.locator('.po-safe-native')).toHaveAttribute('data-po-link-problem','matched');await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(0);
+  const migrated=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);expect(Object.keys(migrated.records)).toHaveLength(1);expect(migrated.collection).toHaveLength(1);expect(Object.values(migrated.aliases).every(a=>a.openedSignature===a.signature)).toBe(true);
+ }finally{await f.dispose();}
 });

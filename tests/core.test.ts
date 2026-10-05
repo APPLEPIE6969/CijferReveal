@@ -19,7 +19,9 @@ describe('canonical self',()=>{
  it('overview without top-level type',()=>expect(getCanonicalResultIdentity(rawRecord({$type:undefined}))).not.toBeNull());
  it('normalizes live numeric self IDs consistently with string IDs',()=>{const type=rawRecord().$type;const numeric=getCanonicalResultIdentity(rawRecord({links:[{rel:'self',id:1234567890123,type}]}));expect(numeric).toEqual({id:'1234567890123',type});expect(numeric).toEqual(getCanonicalResultIdentity(rawRecord({links:[{rel:'self',id:'1234567890123',type}]})));});
  it.each([0,-1,1.5,NaN,Infinity,Number.MAX_SAFE_INTEGER+1])('rejects unsafe numeric self ID %s',id=>expect(getCanonicalResultIdentity(rawRecord({links:[{rel:'self',id,type:rawRecord().$type}]}))).toBeNull());
- it('does not adopt koppeling',()=>expect(getCanonicalResultIdentity({...rawRecord(),links:[{rel:'koppeling',id:'fixture',type:rawRecord().$type}]})).toBeNull());
+ it('uses the verified individual-result koppeling fallback when self is absent',()=>expect(getCanonicalResultIdentity({...rawRecord(),links:[{rel:'koppeling',id:'fixture',type:rawRecord().$type}]})).toEqual({id:'fixture',type:rawRecord().$type}));
+ it('never treats a column/group koppeling as an individual result',()=>expect(getCanonicalResultIdentity({...rawRecord(),links:[{rel:'koppeling',id:'fixture',type:'resultaten.kolommen.RToetskolom'}]})).toBeNull());
+ it('koppeling fallback still rejects multiple possible identities and missing record types',()=>{const links=[{rel:'koppeling',id:'first',type:rawRecord().$type},{rel:'koppeling',id:'second',type:rawRecord().$type}];expect(getCanonicalResultIdentity({...rawRecord(),links})).toBeNull();expect(getCanonicalResultIdentity({...rawRecord(),$type:undefined,links:links.slice(0,1)})).toBeNull();});
  it('scope/dossier/install separation',async()=>{const d=await digest('salt','scope','progression','id');expect(d).toHaveLength(64);expect(d).not.toBe(await digest('salt','scope','exam','id'));expect(d).not.toBe(await digest('other','scope','progression','id'));});
 });
 describe('narrow resource and projection',()=>{

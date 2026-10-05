@@ -1,5 +1,14 @@
 # Wat is er veranderd?
 
+## Versie 0.2.2 — 5 oktober 2026
+
+- Eén cijfer uit twee dossiers krijgt één opening en één plek in de inventaris, als een gedeelde kolom-ID en dezelfde cijfergegevens de koppeling bewijzen.
+- Cijfers die alleen op elkaar lijken blijven apart. Bij twijfel blijft de opening geblokkeerd.
+- Bestaande geopende cijfers worden veilig gekoppeld zodra dezelfde gegevens opnieuw worden herkend. De inventaris wordt niet gewist.
+- De herkenning van vakkaarten, herkansingen, datums en cijfernotaties is uitgebreid.
+
+De tests bewijzen deze situaties met voorbeeldgegevens. 
+
 ## Versie 0.2.1 — 5 oktober 2026
 
 - Het extensievenster heeft alleen een versienummer en **Reset extensie**.
