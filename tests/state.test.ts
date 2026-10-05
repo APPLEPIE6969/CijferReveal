@@ -58,3 +58,33 @@ it('reset removes the opened lock from legacy records without a display snapshot
  const s=newState();classify(s,input(),LIVE_PROFILE);markOpened(s,key,version,scope);delete s.records[key].display;
  resetOpenedResults(s);expect(s.records[key].state).toBe('unresolved');classify(s,input(),LIVE_PROFILE);expect(queue(s,scope)).toHaveLength(1);
 });
+
+it('migrate repairs unusable persisted settings field by field instead of trusting the stored object',()=>{
+ expect(migrate({...newState(),settings:{sound:false,volume:42,motion:'evil'} as never}).settings).toEqual({sound:false,volume:.7,motion:'system'});
+ expect(migrate({...newState(),settings:{sound:'yes',volume:Number.NaN,motion:'reduce'} as never}).settings).toEqual({sound:true,volume:.7,motion:'reduce'});
+ expect(migrate({...newState(),settings:{sound:true,volume:1.5,motion:'system'} as never}).settings).toEqual({sound:true,volume:.7,motion:'system'});
+expect(migrate({...newState(),settings:{} as never}).settings).toEqual({sound:true,volume:.7,motion:'system'});
+ const absent=newState() as {settings?:unknown};delete absent.settings;
+ expect(migrate(absent).settings).toEqual({sound:true,volume:.7,motion:'system'});
+});
+it('migrate drops collection entries whose persisted display fields are unusable',()=>{
+ const s=newState();classify(s,input(),fixtureProfile);markOpened(s,key,version,scope);
+ const stored=JSON.parse(JSON.stringify(s)) as ReturnType<typeof newState>;
+ expect(migrate(structuredClone(stored)).collection).toHaveLength(1);
+ for(const patch of [{subject:undefined},{weight:42},{description:'x'.repeat(301)},{date:'x'.repeat(81)},{weight:'y'.repeat(41)},{value:' '},{grade:99}]){
+  const tampered=structuredClone(stored);Object.assign(tampered.collection[0],patch);
+  expect(migrate(tampered).collection).toEqual([]);
+ }
+});
+it('migrate fails closed on a persisted record with an unusable display snapshot',()=>{
+ const tampered=(patch:Record<string,unknown>)=>{const s=newState();classify(s,input(),fixtureProfile);Object.assign(s.records[key].display!,patch);return s;};
+ for(const patch of [{subject:undefined},{weight:42},{description:'x'.repeat(301)},{date:'x'.repeat(81)},{value:'8,3',grade:9.9},{key:'d'.repeat(64)},{version:'d'.repeat(64)}])expect(()=>migrate(tampered(patch))).toThrow();
+ expect(migrate(tampered({})).records[key].display).toMatchObject({value:'8,3',grade:8.3});
+});
+it('migrate fails closed on unusable persisted record metadata',()=>{
+ const tampered=(patch:Record<string,unknown>)=>{const s=newState();classify(s,input(),fixtureProfile);Object.assign(s.records[key],patch);return s;};
+ expect(()=>migrate(tampered({firstSeen:Number.NaN}))).toThrow();
+ expect(()=>migrate(tampered({firstSeen:'yesterday'}))).toThrow();
+ expect(()=>migrate(tampered({lastResolvedState:'nonsense'}))).toThrow();
+ expect(migrate(tampered({lastResolvedState:'observed-nonnumeric'})).records[key].lastResolvedState).toBe('observed-nonnumeric');
+});
