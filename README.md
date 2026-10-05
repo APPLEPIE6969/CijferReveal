@@ -44,6 +44,10 @@ Download en pak de nieuwste release uit over de bestaande map. Klik daarna op he
 
 Je cijfers en instellingen blijven op je eigen apparaat. Er is geen account bij CijferReveal en de extensie stuurt je gegevens niet naar de maker. De extensie leest alleen cijfergegevens die SOMtoday zelf al ophaalt.
 
+## Licentie
+
+CijferReveal is beschikbaar onder de [MIT-licentie](LICENSE).
+
 CijferReveal is gemaakt voor computerbrowsers die op Chromium werken. Het is niet gemaakt voor Firefox, Safari of mobiele browsers. Sommige scholen kunnen extensies blokkeren. We hebben tests gedaan met voorbeeldcijfers; dat garandeert niet dat elke school of toekomstige SOMtoday-versie werkt.
 
 ## Zelf bouwen
