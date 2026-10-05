@@ -47,6 +47,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser tests
         run: npm run test:e2e
+      - name: Bouw developerbuild
+        run: npm run build:developer
       - name: Maak en controleer releasebestanden
         run: node scripts/prepare-release.mjs "$GITHUB_REF_NAME" "$RUNNER_TEMP/cijferreveal-release"
       - name: Publiceer release
@@ -55,7 +57,7 @@ jobs:
         run: >-
           gh release create "$GITHUB_REF_NAME"
           "$RUNNER_TEMP/cijferreveal-release/CijferReveal.zip#CijferReveal.zip"
-          "$RUNNER_TEMP/cijferreveal-release/SHA256SUMS.txt#SHA256SUMS.txt"
+          "$RUNNER_TEMP/cijferreveal-release/zzz-developer-debug-build-${GITHUB_REF_NAME#v}.zip#zzz-developer-debug-build-${GITHUB_REF_NAME#v}.zip"
           --title "CijferReveal ${GITHUB_REF_NAME#v}"
           --notes-file "$RUNNER_TEMP/cijferreveal-release/release-notes.md"
           --verify-tag --latest
