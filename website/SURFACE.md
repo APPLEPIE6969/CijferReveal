@@ -8,7 +8,7 @@ De bevestigde sfeer is **donker en rustig**: grafiet als basis, gedempt blauw al
 
 ## Inhoud en interactie
 
-- Toon de kop “Cijfers, één voor één.” en de korte uitleg over de SOMtoday-pack opening.
+- Toon de kop “SomToday Pack Opening” en de korte uitleg over de SOMtoday-pack opening.
 - Bied precies één link aan: [Bekijk het project op GitHub](https://github.com/js664/CijferReveal). Open die in een nieuw tabblad met veilige `rel`-attributen.
 - Houd de overige projectcontext als gewone tekst; voeg geen tweede bestemming of concurrerende oproep toe.
 - Behoud zichtbare toetsenbordfocus, een korte hoverreactie en ondersteuning voor `prefers-reduced-motion`.
