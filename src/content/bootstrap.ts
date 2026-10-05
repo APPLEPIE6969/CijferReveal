@@ -1,12 +1,12 @@
 import {Bridge} from './bridge';
 import {Experience} from './mount';
-import {joinCard} from '../somtoday/dom-join';
+import {joinCard,explainCard} from '../somtoday/dom-join';
 import {nativeCardValues,presentCard,type Presentation} from '../spoiler/recent-card';
 import {presentDerived,presentOverview} from '../spoiler/derived';
 import {injectInventoryTab,type InventoryTabController} from '../collection/CollectionTab';
 import {listenRoutes} from './route-controller';
 import type {State} from '../state/schema';
-import {diagnose,diagnosticReport,diagnosticStage,isConcealed} from '../dev/diagnostics';
+import {diagnose,diagnosticReport,diagnosticStage,isConcealed,updateCardDiagnostic} from '../dev/diagnostics';
 if(import.meta.env.DEV)diagnosticStage('document-start','document',!document.querySelector('sl-laatste-resultaat-item,sl-vakresultaat-item'));
 let cssMeasured=false;
 const OWNER='sl-laatste-resultaat-item,sl-vakresultaat-item';
@@ -44,7 +44,9 @@ function reconcileOwner(owner:HTMLElement){
  diagnose(owner);
  const native=nativeCardValues(owner);const tuple={subject:owner.querySelector('.titel')?.textContent??'',subtitle:owner.querySelector('.subtitel')?.textContent??'',weight:native.weight,value:native.value,kind:owner.matches('sl-vakresultaat-item')?'subject' as const:'recent' as const,family:owner.closest('sl-examenresultaten')?'exam':owner.closest('sl-voortgangsresultaten')?'progression':undefined};
  const live=[...bridge.records.values()].filter(r=>r.scope===bridge.activeScope);
+ const explanation=explainCard(tuple,live.map(x=>x.record),record=>live.find(x=>x.record===record)!.key);
  const result=failed?null:joinCard(tuple,live.map(x=>x.record),record=>live.find(x=>x.record===record)!.key);
+ if(import.meta.env.DEV){if(failed)explanation.reason='Lokale opslag is niet beschikbaar';else if(result){const selectedLive=live.find(x=>x.record===result),stored=selectedLive?bridge.state?.records[selectedLive.key]:undefined;if(!stored||stored.version!==selectedLive?.version)explanation.reason='Metadata matcht, maar er is geen actuele veilige presentatie in lokale opslag';}updateCardDiagnostic(owner,explanation);}
  diagnosticStage('classification',owner.tagName.toLowerCase(),isConcealed(owner));
  const selected=result?live.find(x=>x.record===result):null;const candidate=selected?bridge.state?.records[selected.key]:null;const stored=candidate?.version===selected?.version?candidate:undefined;
  const linkProblem=result?'matched':failed?'storage':live.length?'metadata':'no-api';
