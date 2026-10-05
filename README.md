@@ -46,7 +46,9 @@ Je cijfers en instellingen blijven op je eigen apparaat. Er is geen account bij 
 
 ## Licentie
 
-CijferReveal is beschikbaar onder de [MIT-licentie](LICENSE).
+Iedereen kan de broncode bekijken en forken, maar de voorwaarden beperken wat je ermee mag doen. De code valt onder de [PolyForm Noncommercial 1.0.0-licentie](LICENSE): gebruik, aanpassingen en delen zijn alleen toegestaan voor niet-commerciële doelen. Commercieel gebruik of geld verdienen ermee mag alleen met aparte toestemming van js664.
+
+Als je een kopie of aangepaste versie deelt, moet je de licentie en de verplichte creditregel uit het LICENSE-bestand meeleveren en js664 vermelden met een link naar dit project. De details en uitzonderingen staan in de licentie.
 
 CijferReveal is gemaakt voor computerbrowsers die op Chromium werken. Het is niet gemaakt voor Firefox, Safari of mobiele browsers. Sommige scholen kunnen extensies blokkeren. We hebben tests gedaan met voorbeeldcijfers; dat garandeert niet dat elke school of toekomstige SOMtoday-versie werkt.
 
