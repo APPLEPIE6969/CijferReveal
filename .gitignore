@@ -4,6 +4,7 @@ dist-dev/
 dist-developer-*/
 pack-opening-voor-somtoday/
 *.zip
+CijferReveal.zip
 test-results/
 playwright-report/
 .impeccable/
