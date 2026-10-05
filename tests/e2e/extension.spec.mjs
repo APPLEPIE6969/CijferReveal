@@ -224,6 +224,24 @@ test('inventory empty state contains no sample grades and returns to Cijfers',as
  const f=await launch(true);try{await expect(f.page.getByRole('button',{name:'Open cijfer'})).toBeVisible();const tab=f.page.getByRole('tab',{name:'Inventaris',exact:true});await expect(tab).toBeVisible();await tab.click();await expect(tab).toHaveAttribute('aria-selected','true');const host=f.page.locator('.po-inventory-host'),cdp=await f.context.newCDPSession(f.page);await expect(host).toBeVisible();await expect.poll(()=>readInventory(cdp)).toMatchObject({heading:'Nog geen geopende cijfers',cardCount:0});await inventoryEval(cdp,function(root){root.querySelector('button').click();});await expect(host).toHaveCount(0);await expect(f.page.locator('sl-cijfers')).toBeVisible();}finally{await f.dispose();}
 });
 
+test('one corrupt persisted archive entry cannot take down the whole Inventaris',async()=>{
+  const f=await launch(true),errors=[];f.page.on('pageerror',error=>errors.push(String(error)));try{
+  await expect(f.page.getByRole('button',{name:'Open cijfer'})).toBeVisible();
+  // What a truncated or tampered store looks like once JSON dropped the field.
+  const state=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState),broken=opened('b','5,8',5.8,'Engels','Essay',200);
+  delete broken.weight;state.collection=[opened('a','8,3',8.3,'Wiskunde A','Hoofdstuk 3',300),broken];state.settings={...state.settings,volume:42,motion:'nonsense'};
+  await f.worker.evaluate(async s=>chrome.storage.local.set({poState:s}),state);
+  await f.page.reload();
+  const tab=f.page.getByRole('tab',{name:'Inventaris',exact:true});await expect(tab).toBeVisible();await tab.click();
+  const cdp=await f.context.newCDPSession(f.page);await expect(f.page.locator('.po-inventory-host')).toBeVisible();
+  // The unusable entry is dropped on load; every valid pack stays reachable.
+  await expect.poll(()=>readInventory(cdp)).toMatchObject({title:'Inventaris',values:['8,3'],cardCount:1});
+  expect(errors).toEqual([]);
+  // Settings are repaired field by field, so a stored volume never reaches the gain node.
+  expect((await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState)).settings).toEqual({sound:false,volume:.7,motion:'system'});
+  }finally{await f.dispose();}
+});
+
 test('one click on Inventaris from another SOMtoday tab opens Cijfers and Inventory together',async()=>{
  const f=await launch(true);try{await expect(f.page.getByRole('button',{name:'Open cijfer'})).toBeVisible();await f.page.getByRole('tab',{name:'Rooster',exact:true}).click();await expect(f.page.locator('sl-cijfers')).toHaveCount(0);const tab=f.page.getByRole('tab',{name:'Inventaris',exact:true});await tab.click();await expect(f.page.locator('.po-inventory-host')).toBeVisible();await expect(tab).toHaveAttribute('aria-selected','true');await expect(f.page.locator('sl-cijfers')).toBeVisible();}finally{await f.dispose();}
 });
