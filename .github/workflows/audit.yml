@@ -1,0 +1,37 @@
+name: Controleer dependencies
+
+on:
+  schedule:
+    # Wekelijks, zodat een nieuw securityadvies in een transitieve dependency
+    # opgemerkt wordt ook als er niets gepusht wordt. Minuut 23 voorkomt
+    # de piek van geplande runs op het hele uur.
+    - cron: '23 5 * * 1'
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Haal de bestanden op
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Bereid Node.js voor
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `npm run audit` bestond al in package.json, maar geen workflow riep hem aan.
+      # Alleen productiedependencies; devDependencies vallen buiten de uitgebrachte extensie.
+      - name: Controleer productiedependencies op kwetsbaarheden
+        run: npm run audit
