@@ -2,6 +2,7 @@
 
 ## Versie 0.2.2 — 5 oktober 2026
 
+- Compatibiliteit gecontroleerd na de Microsoft Edge-update naar versie 154.0.4258.53 (64-bits).
 - Eén cijfer uit twee dossiers krijgt één opening en één plek in de inventaris, als een gedeelde kolom-ID en dezelfde cijfergegevens de koppeling bewijzen.
 - Cijfers die alleen op elkaar lijken blijven apart. Bij twijfel blijft de opening geblokkeerd.
 - Bestaande geopende cijfers worden veilig gekoppeld zodra dezelfde gegevens opnieuw worden herkend. De inventaris wordt niet gewist.
