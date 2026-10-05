@@ -1,21 +1,21 @@
-import {parseGrade} from '../somtoday/grade-parser';
+import {normalizeGradeValue,parseGrade} from '../somtoday/grade-parser';
 import type {ValidationProfile} from '../somtoday/validation-profile';
 import type {ResultRecord,DisplayResult,Surface} from '../somtoday/types';
 import {defaultSettings,type State} from './schema';
 export interface ClassifiedInput { record:ResultRecord;key:string;scope:string;version:string; }
 export function classify(state:State,input:ClassifiedInput,_profile:ValidationProfile,now=Date.now()):void{
- const {record:r,key,scope,version}=input,previous=state.records[key],grade=parseGrade(r.value);
+ const {record:r,key,scope,version}=input,previous=state.records[key],grade=parseGrade(r.value),displayValue=normalizeGradeValue(r.value);
  const numeric=grade!==null&&r.isCijfer&&!r.isLabel&&!r.aggregate;
- const star=r.value==='*'&&r.isCijfer&&!r.isLabel&&!r.aggregate;
+ const individual=(r.isCijfer||r.isLabel)&&!r.aggregate&&displayValue!==null;
  // Upgrade legacy observed stars without resetting already opened packs.
  if(previous?.version===version&&(previous.state==='opened'||previous.state==='pending'&&previous.display))return;
  let status:'observed-nonnumeric'|'baseline'|'pending'|'unresolved'='unresolved';
- // Every observed individual numeric/star version can be opened. This policy
- // must work on a fresh installation and when a teacher publishes a former *.
+ // Any non-empty individual result (numeric or textual) can be opened. This
+ // includes letter grades and Unicode labels from SOMtoday, even on first install.
  // Existing collection entries are immutable snapshots, including revisions.
- if(star||numeric)status='pending';
- const display:DisplayResult|undefined=(numeric||star)&&status!=='unresolved'?{key,version,subject:r.subject,description:r.description,date:r.date,weight:r.weight,value:r.value,grade}:undefined;
- state.records[key]={key,scope,version,state:status,numeric,firstSeen:previous?.firstSeen??now,lastResolvedState:star?'observed-nonnumeric':status==='unresolved'?previous?.lastResolvedState??previous?.state:status,display};
+ if(individual)status='pending';
+ const display:DisplayResult|undefined=individual&&status!=='unresolved'?{key,version,subject:r.subject,description:r.description,date:r.date,weight:r.weight,value:r.value.trim(),grade}:undefined;
+ state.records[key]={key,scope,version,state:status,numeric,firstSeen:previous?.firstSeen??now,lastResolvedState:!numeric&&status==='pending'?'observed-nonnumeric':status==='unresolved'?previous?.lastResolvedState??previous?.state:status,display};
 }
 export function noteCoverage(state:State,scope:string,surface:Surface,profile:ValidationProfile){
  const c=state.coverage[scope]??{overview:false,subject:false,armed:false};

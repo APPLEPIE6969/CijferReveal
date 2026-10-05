@@ -1,5 +1,11 @@
 # Wat is er veranderd?
 
+## Versie 0.2.3 — 5 oktober 2026
+
+- Letter- en Unicodecijfers worden nu herkend.
+- De extensie werkt niet op de pagina Vakgemiddelden.
+- De inventaris heeft een nieuw ontwerp.
+
 ## Versie 0.2.2 — 5 oktober 2026
 
 - Eén cijfer uit twee dossiers krijgt één opening en één plek in de inventaris, als een gedeelde kolom-ID en dezelfde cijfergegevens de koppeling bewijzen.

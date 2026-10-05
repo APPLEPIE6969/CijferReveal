@@ -21,3 +21,14 @@ it('an empty recent response still announces the student scope',async()=>{
  await window.fetch(`${location.origin}/rest/v1/geldendvoortgangsdossierresultaten/leerling/another-student`);
  await vi.waitFor(()=>expect(post.mock.calls.some(call=>{const data=call[0] as {protocol?:string;scope?:string;records?:unknown[]};return data.protocol==='po/1'&&/^[a-f0-9]{64}$/.test(data.scope??'')&&data.records?.length===0;})).toBe(true));
 });
+it('route suspension detaches network hooks until the bridge resumes',async()=>{
+ const response=new Response(JSON.stringify({items:[rawRecord()]})),fetcher=vi.fn(async()=>response);window.fetch=fetcher;
+ const open=XMLHttpRequest.prototype.open,send=XMLHttpRequest.prototype.send,post=vi.spyOn(window,'postMessage'),clone=vi.spyOn(response,'clone');
+ await import('../src/page/network-observer');expect(window.fetch).not.toBe(fetcher);
+ window.dispatchEvent(new MessageEvent('message',{source:window,origin:location.origin,data:{protocol:'po/init',salt:'0'.repeat(64)}}));
+ window.dispatchEvent(new MessageEvent('message',{source:window,origin:location.origin,data:{protocol:'po/disable'}}));
+ expect(window.fetch).toBe(fetcher);expect(XMLHttpRequest.prototype.open).toBe(open);expect(XMLHttpRequest.prototype.send).toBe(send);
+ await window.fetch(`${location.origin}/rest/v1/geldendvoortgangsdossierresultaten/leerling/fixture`);await new Promise(r=>setTimeout(r,5));expect(clone).not.toHaveBeenCalled();
+ window.dispatchEvent(new MessageEvent('message',{source:window,origin:location.origin,data:{protocol:'po/init',salt:'0'.repeat(64)}}));
+ expect(window.fetch).not.toBe(fetcher);expect(post.mock.calls.some(call=>(call[0] as {protocol?:string}).protocol==='po/1')).toBe(false);
+});

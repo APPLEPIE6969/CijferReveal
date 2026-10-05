@@ -1,11 +1,11 @@
-:root {--po-shield-installed:1;}
+html:not([data-po-route-excluded="true"]) {--po-shield-installed:1;}
 /* Keep native result layout in place while hiding values before the adapter classifies them. */
-sl-vakresultaat-item,sl-resultaat-item-detail,sl-vakgemiddelde-item-cijfer { display:none!important; }
-sl-laatste-resultaat-item .root,sl-resultaat-item .root {visibility:hidden!important;}
-sl-resultaat-item .cijfer,sl-resultaat-item .cijfer * {visibility:hidden!important;}
-sl-cijfer-overzicht td.cijfer,sl-cijfer-overzicht td.cijfer *,sl-vakresultaten .gemiddelde-wrapper,sl-vakresultaten .gemiddelde-wrapper * { visibility:hidden!important; }
+html:not([data-po-route-excluded="true"]) sl-vakresultaat-item,html:not([data-po-route-excluded="true"]) sl-resultaat-item-detail,html:not([data-po-route-excluded="true"]) sl-vakgemiddelde-item-cijfer { display:none!important; }
+html:not([data-po-route-excluded="true"]) sl-laatste-resultaat-item .root,html:not([data-po-route-excluded="true"]) sl-resultaat-item .root {visibility:hidden!important;}
+html:not([data-po-route-excluded="true"]) sl-resultaat-item .cijfer,html:not([data-po-route-excluded="true"]) sl-resultaat-item .cijfer * {visibility:hidden!important;}
+html:not([data-po-route-excluded="true"]) sl-cijfer-overzicht td.cijfer,html:not([data-po-route-excluded="true"]) sl-cijfer-overzicht td.cijfer *,html:not([data-po-route-excluded="true"]) sl-vakresultaten .gemiddelde-wrapper,html:not([data-po-route-excluded="true"]) sl-vakresultaten .gemiddelde-wrapper * { visibility:hidden!important; }
 /* No stable grade-only tooltip owner exists. Limit the deliberate tradeoff to documents with a mounted grade route. :has also covers newly created body portals before JS. */
-body:has(sl-cijfers) hmy-tooltip.hmy-tooltip,body:has(sl-cijfers) hmy-tooltip.hmy-tooltip * { display:none!important; }
+html:not([data-po-route-excluded="true"]) body:has(sl-cijfers) hmy-tooltip.hmy-tooltip,html:not([data-po-route-excluded="true"]) body:has(sl-cijfers) hmy-tooltip.hmy-tooltip * { display:none!important; }
 .po-safe-native {--po-beam-angle:0deg;position:relative;display:block;contain:layout style;perspective:1000px;}
 .po-safe-native.po-pending::before {content:"";position:absolute;z-index:3;pointer-events:none;inset:-1px;border:1px solid transparent;border-radius:12px;background:conic-gradient(from var(--po-beam-angle),transparent 0 72%,#d9e9ff 84%,#ffffff 89%,transparent 98%) border-box;-webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.28;animation:po-native-beam 3.2s linear infinite;}
 @keyframes po-native-beam {to{--po-beam-angle:360deg;}}
@@ -38,11 +38,11 @@ sl-cijfers .po-unsupported-owner.po-unsupported-owner {display:none!important;}
 .po-safe-native .po-open {cursor:pointer;border:1px solid #8996a7;border-radius:8px;background:#17202c;color:#fff;padding:9px 20px;font:inherit;}
 .po-safe-native .po-open:focus-visible {outline:3px solid #7cb4ff;outline-offset:3px;}
 .po-safe-native .po-card-cover strong {font-size:11px;letter-spacing:.14em;}
-sl-tab-bar .po-inventory-tab {position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:max-content;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;line-height:inherit;cursor:pointer;white-space:nowrap;}
+sl-tab-bar .po-inventory-tab {position:relative;display:inline-flex;align-items:center;justify-content:center;gap:0;min-width:max-content;border:0;border-radius:0;background:transparent;color:var(--po-inventory-inactive-color,currentColor);font:inherit;line-height:inherit;cursor:pointer;white-space:nowrap;appearance:none;}
 sl-tab-bar .po-inventory-tab:hover {background:rgba(70,88,108,.08);}
 sl-tab-bar .po-inventory-tab:focus-visible {outline:3px solid #3275c6;outline-offset:-3px;}
 sl-tab-bar .po-inventory-tab svg {width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5;}
-sl-tab-bar .po-inventory-tab[aria-selected="true"] {font-weight:600!important;}
+sl-tab-bar .po-inventory-tab[aria-selected="true"] {color:var(--po-inventory-active-color,currentColor)!important;font-weight:600!important;}
 sl-tab-bar .po-inventory-tab[aria-selected="true"]::before,sl-tab-bar .po-inventory-tab[aria-selected="true"]::after {position:absolute;right:0;left:0;height:2px;background:var(--po-inventory-active-border,#3275c6);content:"";}
 sl-tab-bar .po-inventory-tab[aria-selected="true"]::before {top:0;}
 sl-tab-bar .po-inventory-tab[aria-selected="true"]::after {bottom:0;}

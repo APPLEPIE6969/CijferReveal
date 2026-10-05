@@ -6,10 +6,11 @@ import {command} from '../state/repository';
 export interface LiveRecord { record:ResultRecord;key:string;scope:string;version:string;rawKey:string;rawVersion:string; }
 export class Bridge {
  records=new Map<string,LiveRecord>();activeScope:string|null=null;state:State|null=null;
- private chain=Promise.resolve();private waiting:ReturnType<typeof validateObservation>[]=[];private disposed=false;
+ private chain=Promise.resolve();private waiting:ReturnType<typeof validateObservation>[]=[];private disposed=false;private suspended=false;
  constructor(private changed:()=>void,private failed:()=>void){}
  private listener=(event:MessageEvent)=>{
  if(event.source!==window||event.origin!==location.origin)return;
+ if(this.suspended)return;
  if(event.data?.protocol==='po/ready'){if(this.state)this.hello();return;}
  const message=validateObservation(event.data);if(!message)return;
  this.chain=this.chain.then(()=>this.consume(message)).catch(()=>this.failed());
@@ -22,7 +23,7 @@ export class Bridge {
  private hello(){if(this.state)window.postMessage({protocol:'po/init',salt:this.state.salt},location.origin);}
  private rebind(){for(const live of this.records.values()){const alias=this.state?.aliases?.[live.rawKey],current=alias?.rawVersion===live.rawVersion;live.key=current?alias.logicalKey:live.rawKey;live.version=current?this.state?.records[live.key]?.version??live.rawVersion:live.rawVersion;}}
  private async consume(message:NonNullable<ReturnType<typeof validateObservation>>){
- if(this.disposed)return;
+ if(this.disposed||this.suspended)return;
  if(!this.state){if(this.waiting.length<32)this.waiting.push(message);return;}
  const scopeChanged=!!message.scope&&this.activeScope!==message.scope;
  if(message.scope){if(this.activeScope&&this.activeScope!==message.scope){this.records.clear();this.waiting=[];}this.activeScope=message.scope;}
@@ -49,5 +50,7 @@ export class Bridge {
   const task=this.chain.then(async()=>{if(this.disposed)return;const next=await command({kind:'read'});if(this.state?.salt!==next.salt){this.records.clear();this.activeScope=null;this.waiting=[];}this.state=next;this.rebind();this.hello();this.changed();});
   this.chain=task.catch(()=>{});return task;
  }
+ pause(){this.suspended=true;this.records.clear();this.activeScope=null;this.waiting=[];window.postMessage({protocol:'po/disable'},location.origin);}
+ resume(){if(!this.suspended)return;this.suspended=false;void this.refresh().catch(()=>this.failed());}
  dispose(){this.disposed=true;window.removeEventListener('message',this.listener);this.records.clear();}
 }

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pack Opening voor SOMtoday",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Open zichtbare cijfers met een lokale pack opening. Cijfers zijn vooraf bepaald.",
   "minimum_chrome_version": "111",
   "permissions": [
@@ -23,6 +23,9 @@
       "matches": [
         "https://leerling.somtoday.nl/*"
       ],
+      "exclude_matches": [
+        "https://leerling.somtoday.nl/cijfers/vakgemiddelden*"
+      ],
       "css": [
         "shield.css"
       ],
@@ -35,6 +38,9 @@
     {
       "matches": [
         "https://leerling.somtoday.nl/*"
+      ],
+      "exclude_matches": [
+        "https://leerling.somtoday.nl/cijfers/vakgemiddelden*"
       ],
       "js": [
         "observer.js"

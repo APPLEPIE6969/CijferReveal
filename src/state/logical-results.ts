@@ -1,6 +1,6 @@
 import {digest} from '../somtoday/identity';
 import {parseSomtodayDate} from '../somtoday/date-parser';
-import {parseGrade} from '../somtoday/grade-parser';
+import {normalizeGradeValue,parseGrade} from '../somtoday/grade-parser';
 import {classify,type ClassifiedInput} from './classifier';
 import {LIVE_PROFILE} from '../somtoday/validation-profile';
 import type {State,StoredAlias} from './schema';
@@ -18,7 +18,7 @@ export async function observeLogicalResults(state:State,inputs:ClassifiedInput[]
   const projected=scratch.records[input.key],previous=state.aliases[input.key];owned.add(input.key);
   // Column identity is explicit API identity, not a subject/test-code guess.
   const proof=projected.display&&r.columnId&&r.subjectId?await digest(state.salt,'logical-column',input.scope,r.subjectId,r.columnId,r.cohortId??'',r.variant??'first'):undefined;
-  const signature=await digest(state.salt,'logical-snapshot',proof??input.key,text(r.subject),text(r.description),wallDate(r.date),number(r.weight),String(parseGrade(r.value)??r.value),r.period,r.testCode,r.columnType??'',String(r.isCijfer),String(r.isLabel),String(r.aggregate));
+  const signature=await digest(state.salt,'logical-snapshot',proof??input.key,text(r.subject),text(r.description),wallDate(r.date),number(r.weight),String(parseGrade(r.value)??normalizeGradeValue(r.value)??r.value),r.period,r.testCode,r.columnType??'',String(r.isCijfer),String(r.isLabel),String(r.aggregate));
   const legacyOpened=!previous&&((oldRecords[input.key]?.scope===input.scope&&oldRecords[input.key]?.version===input.version&&oldRecords[input.key]?.state==='opened')||state.collection.some(c=>c.scope===input.scope&&c.key===input.key&&c.version===input.version));
   state.aliases[input.key]={scope:input.scope,family:r.family,rawVersion:input.version,proof,signature,logicalKey:input.key,numeric:projected.numeric,firstSeen:previous?.firstSeen??oldRecords[input.key]?.firstSeen??now,display:projected.display,openedSignature:legacyOpened?signature:previous?.openedSignature};
  }

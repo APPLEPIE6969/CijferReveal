@@ -8,7 +8,7 @@ import {joinCard} from '../src/somtoday/dom-join';
 import {rawRecord,record} from './fixtures';
 const origin='https://leerling.somtoday.nl';
 describe('whole-string Dutch parser',()=>{
- it.each([['8,3',8.3],['5,5',5.5],['10',10],['10,0',10],['1',1],['4,8',4.8],['6,3',6.3],['7,8',7.8],['8,9',8.9],['9,7',9.7],['6.8',6.8],['6,75',6.75],['8,30',8.3],[' 8,3 ',8.3],['\u00a08,3\u00a0',8.3]])('accepts fixture %s',(input,want)=>expect(parseGrade(input)).toBe(want));
+ it.each([['8,3',8.3],['5,5',5.5],['10',10],['10,0',10],['1',1],['4,8',4.8],['6,3',6.3],['7,8',7.8],['8,9',8.9],['9,7',9.7],['6.8',6.8],['6,75',6.75],['8,30',8.3],[' 8,3 ',8.3],['\u00a08,3\u00a0',8.3],['６，３',6.3]])('accepts fixture %s',(input,want)=>expect(parseGrade(input)).toBe(want));
  it.each(['*','',' ','-','voldoende','8,3x','x8,3','0','11','10,1','8,333','+8','8%','8e0','8/10'])('rejects %j',v=>expect(parseGrade(v)).toBeNull());
 });
 describe('canonical self',()=>{
@@ -43,6 +43,14 @@ describe('unique metadata join',()=>{
  it('decimal grades and weights match their equivalent display notation',()=>expect(joinCard({...tuple,value:'8.30',weight:'2,0 ×'},[record()])?.id).toBe('fixture-result-a'));
  it('a missing description does not disable an otherwise unique full metadata match',()=>expect(joinCard({...tuple,subtitle:'04 okt. 2026',weight:'2 keer'},[record({description:''})])?.id).toBe('fixture-result-a'));
  it('a day substring never matches a different day',()=>expect(joinCard({...tuple,subtitle:'14 okt · Hoofdstuk 3'},[record()])).toBeNull());
- it('labels never become individual packs even with a matching tuple',()=>expect(joinCard(tuple,[record({isLabel:true})])).toBeNull());
+ it('unclassified text never becomes an individual pack even with a matching tuple',()=>expect(joinCard(tuple,[record({isCijfer:false,isLabel:false})])).toBeNull());
+ it.each(['O','V','G','好','🧪','e\u0301'])('matches a Unicode letter grade %s as displayed',value=>{
+  const letter=record({value,isCijfer:false,isLabel:true});
+  expect(joinCard({...tuple,value},[letter])?.value).toBe(value);
+ });
+ it('normalizes equivalent Unicode grade text without equating different letters',()=>{
+  expect(joinCard({...tuple,value:'Ｇ'},[record({value:'G',isCijfer:false,isLabel:true})])?.value).toBe('G');
+  expect(joinCard({...tuple,value:'V'},[record({value:'O',isCijfer:false,isLabel:true})])).toBeNull();
+ });
  it('aggregate excluded',()=>expect(joinCard(tuple,[record({aggregate:true})])).toBeNull());
 });

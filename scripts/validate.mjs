@@ -4,6 +4,7 @@ import {unzipSync} from 'fflate';
 const m=JSON.parse(await readFile('dist/manifest.json','utf8'));assert.equal(m.manifest_version,3);assert.deepEqual(m.permissions,['storage']);assert.deepEqual(m.host_permissions,['https://leerling.somtoday.nl/*']);
 assert.equal(m.content_scripts[0].run_at,'document_start');assert.equal(m.content_scripts[1].world,'MAIN');
 for(const c of m.content_scripts){assert.deepEqual(c.matches,['https://leerling.somtoday.nl/*']);for(const f of [...c.js,...(c.css??[])])await access(`dist/${f}`);}
+for(const c of m.content_scripts)assert(c.exclude_matches?.includes('https://leerling.somtoday.nl/cijfers/vakgemiddelden*'),'vakgemiddelden must not receive extension scripts or styles');
 for(const f of ['worker.js','popup.html','assets/case-opening.mp3','assets/high-grade-accent.mp3'])await access(`dist/${f}`);
 const content=await readFile('dist/content.js','utf8');assert(!content.includes('po/diagnostics'));
 assert(!(await readdir('dist')).includes('tester.html'));

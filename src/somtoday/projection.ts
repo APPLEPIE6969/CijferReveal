@@ -1,5 +1,5 @@
 import {getCanonicalResultIdentity} from './identity';
-import {parseGrade} from './grade-parser';
+import {normalizeGradeValue,parseGrade} from './grade-parser';
 import type {Resource} from './resources';
 import type {ResultRecord} from './types';
 const obj=(v:unknown):Record<string,unknown>=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
@@ -23,7 +23,7 @@ function projectRecord(input:unknown,resource:Resource,aggregate=false):ResultRe
  add(first||(date1||date2||retake1||retake2?'':overall),firstDate);
  add(retake1,date1,'attempt-1');add(retake2,date2,'attempt-2');
  const latest=date2||date1||firstDate;
- const sameValue=(a:string,b:string)=>a===b||(parseGrade(a)!==null&&parseGrade(a)===parseGrade(b));
+ const sameValue=(a:string,b:string)=>{const left=normalizeGradeValue(a),right=normalizeGradeValue(b);return left!==null&&right!==null&&(left===right||(parseGrade(left)!==null&&parseGrade(left)===parseGrade(right)));};
  if(overall&&!variants.some(attempt=>sameValue(attempt.value,overall)&&attempt.date===latest))add(overall,latest,variants.length?'current':undefined);
  return variants;
 }

@@ -1,10 +1,10 @@
-# Developer build 0.2.2
+# Developer build 0.2.3
 
 Deze versie heeft een extra knop **Debug** rechtsonder op SOMtoday.
 
 ## Installeren
 
-1. Download `pack-opening-voor-somtoday-developer-0.2.2.zip` bij release 0.2.2.
+1. Download `zzz-developer-debug-build-0.2.3.zip` bij release 0.2.3.
 2. Pak het ZIP-bestand uit in een nieuwe map.
 3. Open `chrome://extensions` of `edge://extensions`.
 4. Zet **Ontwikkelaarsmodus** aan.
@@ -15,4 +15,4 @@ Gebruik deze versie alleen om een probleem te onderzoeken. In het rapport staan 
 
 ## Zelf opnieuw bouwen
 
-Voer `npm run build:developer` uit. Dit maakt telkens een nieuwe, aparte map `dist-developer-0.2.2-*`; de normale buildmap, release-ZIP en eerdere developer builds worden niet overschreven.
+Voer `npm run build:developer` uit. Dit maakt telkens een nieuwe, aparte map `dist-developer-0.2.3-*`; de normale buildmap, release-ZIP en eerdere developer builds worden niet overschreven.

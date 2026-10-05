@@ -1,5 +1,5 @@
 import type {ResultRecord} from './types';
-import {parseGrade} from './grade-parser';
+import {normalizeGradeValue,parseGrade} from './grade-parser';
 import {recordIdentityKey} from './identity';
 import {parseSomtodayDate} from './date-parser';
 export const normalize=(v:string)=>v.normalize('NFKC').toLocaleLowerCase('nl-NL').replace(/\s+/g,' ').trim();
@@ -9,7 +9,7 @@ function weightValue(value:string):string|number{
  const text=normalize(value).replace(/\s*(?:x|×|keer)$/,'');
  return /^\d+(?:[,.]\d+)?$/.test(text)?Number(text.replace(',','.')):text;
 }
-function sameValue(a:string,b:string){const x=parseGrade(a),y=parseGrade(b);return x!==null&&y!==null?x===y:a.trim()===b.trim();}
+function sameValue(a:string,b:string){const left=normalizeGradeValue(a),right=normalizeGradeValue(b);if(left===null||right===null)return false;const x=parseGrade(left),y=parseGrade(right);return x!==null&&y!==null?x===y:left===right;}
 export function dateVariants(value:string,now=new Date()):string[]{
  const d=parseSomtodayDate(value);if(!Number.isFinite(d.getTime()))return [];
  const days=calendarDay(now)-calendarDay(d);
@@ -20,7 +20,7 @@ export function dateVariants(value:string,now=new Date()):string[]{
 export interface CardTuple { subject:string;subtitle:string;weight:string;value:string;family?:string;kind?:'recent'|'subject'; }
 export interface MatchExplanation {candidateCount:number;eligibleCount:number;logicalCount:number;matched:boolean;reason:string;dom:{subject:string;description:string;normalizedDate:string;weight:string;family:string|null};candidates:{family:string;subject:string;description:string;normalizedDate:string;weight:string;testCode:string;columnId:string|null;logicalIdentity:string;attempt:string|null;reason:string}[]}
 function rejectReason(tuple:CardTuple,r:ResultRecord):string|null{
- if(r.aggregate)return 'Samengesteld gemiddelde/resultaat';if(!r.isCijfer||r.isLabel)return 'Geen individueel cijferresultaat';if(!sameValue(tuple.value,r.value))return 'Zichtbare kaartwaarde komt niet overeen';if(weightValue(tuple.weight)!==weightValue(r.weight))return 'Weging komt niet overeen';if(tuple.family&&r.family!==tuple.family)return 'Dossierfamilie komt niet overeen';
+ if(r.aggregate)return 'Samengesteld gemiddelde/resultaat';if((!r.isCijfer&&!r.isLabel)||!normalizeGradeValue(r.value))return 'Geen individueel cijferresultaat';if(!sameValue(tuple.value,r.value))return 'Zichtbare kaartwaarde komt niet overeen';if(weightValue(tuple.weight)!==weightValue(r.weight))return 'Weging komt niet overeen';if(tuple.family&&r.family!==tuple.family)return 'Dossierfamilie komt niet overeen';
  const title=normalize(tuple.subject),subtitle=normalize(tuple.subtitle),description=normalize(r.description);const recent=normalize(r.subject)===title&&(!description||subtitle.includes(description));const subject=tuple.kind==='subject'&&(title===description||!!description&&title.startsWith(description+' geïmporteerd uit '));if(!recent&&!subject)return 'Vak/toetsomschrijving komt niet overeen';
  const date=dateLabel(tuple.subtitle);if(r.date&&!dateVariants(r.date).some(candidate=>date===candidate||date.startsWith(candidate)&&/^(?:\s*[•·–—]\s*|\s+-\s*)/.test(date.slice(candidate.length))))return 'Datum komt niet overeen';if(!r.date&&!(date===''||/^[•·]/.test(date)))return 'Datum ontbreekt of komt niet overeen';return null;
 }
