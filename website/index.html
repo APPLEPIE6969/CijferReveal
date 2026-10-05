@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#10151c" />
+    <meta name="description" content="CijferReveal — open je SOMtoday-cijfers één voor één." />
+    <title>CijferReveal</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #f3f6fa;
+        --muted: #bac4cf;
+        --blue: #a9c9ed;
+        --surface: #171e27;
+        --line: #ffffff25;
+      }
+      * { box-sizing: border-box; }
+      html { min-width: 320px; min-height: 100%; background: #0b0f14; }
+      body {
+        min-height: 100svh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 28px;
+        overflow: hidden;
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(ellipse at 50% 40%, #27374a65 0, transparent 48%),
+          linear-gradient(145deg, #11171f, #090c11 72%);
+      }
+      body::before, body::after {
+        position: fixed;
+        z-index: 0;
+        width: min(38vw, 440px);
+        aspect-ratio: 1;
+        border: 1px solid #cfdef10b;
+        border-radius: 50%;
+        content: "";
+        pointer-events: none;
+      }
+      body::before { top: -24%; left: -14%; box-shadow: 0 0 0 42px #cfdef106, 0 0 0 84px #cfdef104; }
+      body::after { right: -18%; bottom: -33%; width: min(48vw, 560px); box-shadow: 0 0 0 48px #cfdef105; }
+      main {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 500px);
+        padding: clamp(28px, 7vw, 54px);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: linear-gradient(155deg, #1c2530f2, #131920f5 68%);
+        box-shadow: inset 0 1px #ffffff12;
+        text-align: center;
+        animation: arrive 650ms cubic-bezier(.2,.8,.2,1) both;
+      }
+      .mark {
+        display: grid;
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 30px;
+        place-items: center;
+        border: 1px solid #d8e7f733;
+        border-radius: 16px;
+        background: linear-gradient(145deg, #d8e7f71c, #d8e7f706);
+        color: #e4edf7;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -.06em;
+        box-shadow: inset 0 1px #ffffff19, 0 8px 22px #0003;
+      }
+      h1 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(36px, 8vw, 54px);
+        line-height: 1.04;
+        font-weight: 620;
+        letter-spacing: -.045em;
+        text-wrap: balance;
+      }
+      p {
+        max-width: 31ch;
+        margin: 18px auto 32px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+        text-wrap: pretty;
+      }
+      .repo-link {
+        min-height: 58px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 0 18px;
+        border: 1px solid #dbe8f054;
+        border-radius: 10px;
+        background: linear-gradient(110deg, #e5edf6, #cbdced);
+        color: #111923;
+        text-align: left;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 650;
+        box-shadow: 0 9px 24px #0003, inset 0 1px #fff;
+        transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+      }
+      .repo-link:hover { transform: translateY(-2px); background: #f1f6fb; box-shadow: 0 13px 28px #0005, inset 0 1px #fff; }
+      .repo-link:active { transform: translateY(0); }
+      .repo-link:focus-visible { outline: 3px solid #a9c9ed; outline-offset: 4px; }
+      .link-end { display: inline-flex; align-items: center; gap: 12px; }
+      .repo-link svg { width: 22px; height: 22px; flex: none; }
+      .repo-link .arrow { width: 18px; height: 18px; opacity: .7; transition: transform 180ms ease; }
+      .repo-link:hover .arrow { transform: translate(2px, -2px); }
+      footer { margin-top: 26px; color: #929eac; font-size: 12px; letter-spacing: .015em; }
+      @keyframes arrive { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      @media (max-width: 480px) {
+        body { padding: 18px; }
+        main { padding: 34px 25px; }
+        .mark { margin-bottom: 25px; }
+        p { font-size: 15px; }
+        .repo-link { min-height: 56px; padding-inline: 14px; font-size: 14px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true">CR</div>
+      <h1>Cijfers,<br />één voor één.</h1>
+      <p>Een korte pack opening voor je SOMtoday-cijfers.</p>
+      <a class="repo-link" href="https://github.com/js664/CijferReveal" target="_blank" rel="noopener noreferrer">
+        <span class="link-end">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.08c-3.1.67-3.75-1.32-3.75-1.32-.5-1.29-1.24-1.63-1.24-1.63-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15 1 .1.76 2.14 3.54 1.63.1-.72.39-1.2.7-1.48-2.48-.28-5.09-1.24-5.09-5.52 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.05 1.15a10.6 10.6 0 0 1 5.55 0c2.11-1.44 3.04-1.15 3.04-1.15.61 1.54.23 2.68.11 2.96.72.78 1.15 1.78 1.15 3.01 0 4.29-2.61 5.23-5.1 5.5.4.34.75 1 .75 2.02v3c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z"/></svg>
+          <span>Bekijk het project op GitHub</span>
+        </span>
+        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
+      </a>
+      <footer>Een onafhankelijk project voor SOMtoday</footer>
+    </main>
+  </body>
+</html>
