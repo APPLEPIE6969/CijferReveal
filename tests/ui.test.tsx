@@ -1,0 +1,74 @@
+import {it,expect,vi,afterEach,beforeEach} from 'vitest';
+import {render,screen,act,cleanup,fireEvent} from '@testing-library/react';
+import {readFileSync} from 'node:fs';
+import {TiltCard} from '../src/opening/TiltCard';
+import {SpinningGrade} from '../src/opening/SpinningGrade';
+import {OpeningOverlay} from '../src/opening/OpeningOverlay';
+import {ResultReveal} from '../src/opening/ResultReveal';
+import {OpeningAudio} from '../src/opening/audio';
+import {tierFor} from '../src/opening/tiers';
+import {reelProgress,EDGE_MS,EDGE_OFFSET,REEL_CROSSINGS_MS,BRAKE_START} from '../src/opening/ReelEngine';
+import {REEL_START,STOP_MS,TICK_SECONDS} from '../src/opening/choreography';
+import {presentCard} from '../src/spoiler/recent-card';
+import {excludeNative} from '../src/spoiler/accessibility';
+import {presentDerived,presentOverview} from '../src/spoiler/derived';
+import {record,nativeCard,key,version} from './fixtures';
+const display={key,version,subject:'Wiskunde A',description:'Hoofdstuk 3',date:'2026-10-04',weight:'2',value:'8,3',grade:8.3};
+beforeEach(()=>{vi.stubGlobal('matchMedia',()=>({matches:false,addEventListener:()=>{},removeEventListener:()=>{}}));});
+afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals();document.body.replaceChildren();});
+it.each([[5.49,'crimson'],[5.5,'bronze'],[6.49,'bronze'],[6.5,'steel'],[7.5,'gold'],[8.5,'electric'],[9.5,'iridescent'],[10,'iridescent']])('tier %s',(v,tier)=>expect(tierFor(v as number).name).toBe(tier));
+it('reel cruises smoothly, reaches the selected edge, and bounces back without crossing into another grade',()=>{
+ const values=Array.from({length:1001},(_,i)=>reelProgress(EDGE_MS*i/1000));
+ expect(values[0]).toBe(0);expect(values.at(-1)).toBeCloseTo(TICK_SECONDS.length+EDGE_OFFSET);
+ for(let i=1;i<values.length;i++)expect(values[i]).toBeGreaterThanOrEqual(values[i-1]);
+ const speed=(ms:number)=>reelProgress(ms+10)-reelProgress(ms);
+ expect(speed(1500)).toBeCloseTo(speed(2500),8);expect(speed(REEL_START+10)).toBeLessThan(speed(REEL_START+100));
+ for(let ms=BRAKE_START;ms<EDGE_MS-20;ms+=5)expect(speed(ms+5)).toBeLessThanOrEqual(speed(ms)+1e-8);
+ // Distinct final ticks cross the marker in the original soundtrack's timeline.
+ for(const seconds of TICK_SECONDS.slice(-5)){
+  const index=TICK_SECONDS.indexOf(seconds);expect(REEL_CROSSINGS_MS[index]).toBeCloseTo(seconds*1000,3);
+ }
+ expect(STOP_MS).toBe(6470);
+ for(let ms=EDGE_MS;ms<=STOP_MS;ms+=10)expect(Math.round(reelProgress(ms))).toBe(TICK_SECONDS.length);
+ expect(reelProgress(EDGE_MS+300)).toBeLessThan(reelProgress(EDGE_MS));expect(reelProgress(STOP_MS)).toBe(TICK_SECONDS.length);
+ for(const [i,ms] of REEL_CROSSINGS_MS.entries())expect(reelProgress(ms)).toBeCloseTo(i+.5,6);
+});
+it('static shield covers all native accessibility owners and portals',()=>{const css=readFileSync('src/spoiler/shield.css','utf8');for(const selector of ['sl-laatste-resultaat-item','sl-vakresultaat-item','sl-resultaat-item-detail','sl-vakgemiddelde-item-cijfer','td.cijfer','gemiddelde-wrapper','hmy-tooltip'])expect(css).toContain(selector);expect(css).not.toContain('body { visibility');});
+it('pending card contains only safe placeholder output',async()=>{document.body.innerHTML=nativeCard();const owner=document.querySelector<HTMLElement>('sl-laatste-resultaat-item')!;excludeNative(owner);let p:ReturnType<typeof presentCard>;await act(()=>{p=presentCard(owner,record(),'pending',display,()=>{});});expect(owner.getAttribute('aria-label')).toBeNull();expect(owner.querySelector('[aria-label]')).toBeNull();expect(owner.getAttribute('aria-hidden')).toBe('true');expect(p!.host.textContent).not.toContain('8,3');expect(p!.host.textContent).not.toContain('2x');expect(p!.host.textContent).toContain('Hoofdstuk 3');expect(screen.getByRole('button',{name:'Open cijfer'})).toBeTruthy();await act(()=>p!.dispose());});
+it.each(['baseline','opened'] as const)('safe %s uses extension-owned value',async status=>{document.body.innerHTML=nativeCard();let p:ReturnType<typeof presentCard>;await act(()=>{p=presentCard(document.querySelector('sl-laatste-resultaat-item')!,record(),status,display,()=>{});});expect(p!.host.textContent).toContain('8,3');expect(p!.host.textContent).not.toContain('Open cijfer');await act(()=>p!.dispose());});
+it('ambiguous/unresolved card never prints result and offers a real reload action',async()=>{document.body.innerHTML=nativeCard();let p:ReturnType<typeof presentCard>;const onRetry=vi.fn();await act(()=>{p=presentCard(document.querySelector('sl-laatste-resultaat-item')!,null,'unresolved',undefined,()=>{},onRetry);});expect(p!.host.textContent).not.toContain('8,3');expect(p!.host.textContent).toContain('nog niet gekoppeld');fireEvent.click(screen.getByRole('button',{name:'Pagina opnieuw laden'}));expect(onRetry).toHaveBeenCalledOnce();await act(()=>p!.dispose());});
+it('derived values remain placeholders without fake averages',()=>{document.body.innerHTML='<sl-cijfers><sl-vakgemiddelde-item-cijfer aria-label="Rapportcijfer 8,3"><span class="cijfer">8,3</span></sl-vakgemiddelde-item-cijfer><sl-cijfer-overzicht><table><tr><td class="cijfer" aria-label="8,3">8,3</td></tr></table></sl-cijfer-overzicht></sl-cijfers>';presentDerived(document.body);presentOverview(document.body);expect(document.querySelector('.po-derived-placeholder')?.textContent).not.toContain('8,3');expect(document.querySelector('.po-overview-status')).toBeTruthy();});
+it('preview waits for Open Cijfer, commits before visible grades, then announces the single reveal',async()=>{
+ vi.useFakeTimers();const audio=new OpeningAudio(()=>''),commit=vi.fn(async()=>{});
+ vi.spyOn(audio,'start').mockResolvedValue(null);vi.spyOn(audio,'stop').mockImplementation(()=>{});vi.spyOn(audio,'reveal').mockImplementation(()=>{});
+ render(<OpeningOverlay result={display} settings={{sound:false,volume:0,motion:'reduce'}} audio={audio} commit={commit} close={()=>{}} position={1} total={1}/>);
+ expect(screen.getByRole('button',{name:'Open Cijfer'})).toBeTruthy();expect(document.body.textContent).not.toContain('8,3');
+ await act(async()=>{await vi.advanceTimersByTimeAsync(1000);});expect(commit).not.toHaveBeenCalled();
+ await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Open Cijfer'}));});expect(commit).toHaveBeenCalledOnce();
+ await act(async()=>{await vi.advanceTimersByTimeAsync(651);});expect(screen.getByRole('status').textContent).toBe('Wiskunde A. Cijfer 8,3.');
+ expect(document.querySelector('.po-grade')?.textContent).toBe('8,3');expect(document.querySelector('.po-digit-strip')).toBeNull();
+});
+it('failed commit keeps the real grade hidden and permits retry without running a reel',async()=>{
+ vi.useFakeTimers();const audio=new OpeningAudio(()=>''),commit=vi.fn(async()=>{throw new Error('storage');});
+ vi.spyOn(audio,'start').mockResolvedValue(null);vi.spyOn(audio,'stop').mockImplementation(()=>{});
+ render(<OpeningOverlay result={display} settings={{sound:false,volume:0,motion:'reduce'}} audio={audio} commit={commit} close={()=>{}} position={1} total={1}/>);
+ await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Open Cijfer'}));});
+ expect(document.body.textContent).not.toContain('8,3');expect(document.body.textContent).toContain('Openen is niet gelukt');expect(document.querySelector('.po-lane')).toBeNull();
+ await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Opnieuw proberen'}));});expect(commit).toHaveBeenCalledTimes(2);
+});
+it('Enter opens the preview once and advances from the final reveal; Escape dismisses the preview',async()=>{
+ vi.useFakeTimers();const audio=new OpeningAudio(()=>''),commit=vi.fn(async()=>{}),next=vi.fn(),close=vi.fn();
+ vi.spyOn(audio,'start').mockResolvedValue(null);vi.spyOn(audio,'stop').mockImplementation(()=>{});vi.spyOn(audio,'reveal').mockImplementation(()=>{});
+ render(<OpeningOverlay result={display} settings={{sound:false,volume:0,motion:'reduce'}} audio={audio} commit={commit} close={close} next={next} position={1} total={2}/>);
+ const dialog=screen.getByRole('dialog');fireEvent.keyDown(dialog,{key:'Escape'});expect(close).toHaveBeenCalledOnce();
+ await act(async()=>{fireEvent.keyDown(dialog,{key:'Enter'});fireEvent.keyDown(dialog,{key:'Enter',repeat:true});});expect(commit).toHaveBeenCalledOnce();
+ await act(async()=>{await vi.advanceTimersByTimeAsync(651);});fireEvent.keyDown(dialog,{key:'Enter'});expect(next).toHaveBeenCalledOnce();
+});
+
+it('digit reels settle on the predetermined complete grade and remove intermediate strips',async()=>{vi.useFakeTimers();const view=render(<SpinningGrade value="10" reduced={false}/>);expect(view.container.querySelectorAll('.po-digit-strip')).toHaveLength(2);await act(async()=>{await vi.advanceTimersByTimeAsync(1700);});expect(view.container.textContent).toBe('10');expect(view.container.querySelector('.po-digit-strip')).toBeNull();});
+it('reduced motion uses the actual grade immediately without digit strips',()=>{const view=render(<SpinningGrade value="8,9" reduced/>);expect(view.container.textContent).toBe('8,9');expect(view.container.querySelector('.po-digit-strip')).toBeNull();});
+it('star reveal has neutral styling and no invented digit reels',()=>{expect(tierFor(null)).toMatchObject({name:'neutral',particles:0});const view=render(<SpinningGrade value="*" reduced={false}/>);expect(view.container.textContent).toBe('*');expect(view.container.querySelector('.po-digit-strip')).toBeNull();});
+it('digit reels restart safely when the grade or motion preference changes',async()=>{vi.useFakeTimers();const view=render(<SpinningGrade value="8,9" reduced={false}/>);await act(async()=>{await vi.advanceTimersByTimeAsync(1700);});expect(view.container.textContent).toBe('8,9');view.rerender(<SpinningGrade value="10" reduced={false}/>);expect(view.container.querySelectorAll('.po-digit-strip')).toHaveLength(2);await act(async()=>{await vi.advanceTimersByTimeAsync(1700);});expect(view.container.textContent).toBe('10');view.rerender(<SpinningGrade value="7,5" reduced/>);expect(view.container.textContent).toBe('7,5');view.rerender(<SpinningGrade value="7,5" reduced={false}/>);expect(view.container.querySelectorAll('.po-digit-strip')).toHaveLength(2);await act(async()=>{await vi.advanceTimersByTimeAsync(1700);});expect(view.container.textContent).toBe('7,5');});
+it('pointer tilt uses a flat hit area and resets on leave',()=>{const view=render(<TiltCard reduced={false}><span>Resultaat</span></TiltCard>);const hit=view.container.querySelector<HTMLElement>('.po-tilt')!;vi.spyOn(hit,'getBoundingClientRect').mockReturnValue({x:0,y:0,left:0,top:0,right:200,bottom:200,width:200,height:200,toJSON:()=>{}});const event=new Event('pointermove',{bubbles:true});Object.defineProperties(event,{clientX:{value:200},clientY:{value:0},pointerType:{value:'mouse'}});fireEvent(hit,event);expect(hit.classList.contains('po-is-hover')).toBe(true);expect(hit.style.getPropertyValue('--po-tilt-ry')).toBe('6deg');fireEvent.pointerLeave(hit);expect(hit.classList.contains('po-is-hover')).toBe(false);expect(hit.style.getPropertyValue('--po-tilt-rx')).toBe('0deg');});
+it('reduced motion ignores pointer tilt',()=>{const view=render(<TiltCard reduced><span>Resultaat</span></TiltCard>);const hit=view.container.querySelector<HTMLElement>('.po-tilt')!;fireEvent.pointerMove(hit,{clientX:50,clientY:50});expect(hit.classList.contains('po-is-hover')).toBe(false);});
+it('grade reveals never include commentary',()=>{const view=render(<ResultReveal result={{...display,value:'3,2',grade:3.2}} reduced/>);expect(view.container.querySelector('.po-result-roast')).toBeNull();expect(view.container.textContent).toContain('3,2');view.rerender(<ResultReveal result={{...display,value:'*',grade:null}} reduced/>);expect(view.container.querySelector('.po-result-roast')).toBeNull();});

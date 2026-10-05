@@ -1,0 +1,51 @@
+html, body, #root { min-width: 320px; margin: 0; }
+body { background: #fff; }
+.po-popup {
+  width: 320px;
+  padding: 22px;
+  color: #1b283a;
+  color-scheme: light;
+  font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.po-popup h1 { margin: 0 0 14px; font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: -.025em; }
+.po-popup-count { margin: 0; padding-bottom: 14px; border-bottom: 1px solid #d9e0e8; color: #526275; }
+.po-popup-loading, .po-popup-error { margin: 16px 0 0; }
+.po-popup-error { color: #8c3037; }
+.po-setting { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 12px; }
+.po-setting label { flex: 1; cursor: pointer; }
+.po-setting output { color: #526275; font-variant-numeric: tabular-nums; }
+
+.po-setting input[type="checkbox"] {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  border: 0;
+  border-radius: 22px;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.po-setting input[type="checkbox"]::before { position: absolute; inset: 10px 0; border: 1px solid #aeb9c7; border-radius: 99px; background: #e5eaf0; content: ""; transition: background-color 140ms ease, border-color 140ms ease; }
+.po-setting input[type="checkbox"]::after { position: absolute; top: 14px; left: 4px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #17253633; content: ""; transition: transform 140ms ease; }
+.po-setting input[type="checkbox"]:checked::before { border-color: #284b70; background: #315d88; }
+.po-setting input[type="checkbox"]:checked::after { transform: translateX(20px); }
+.po-setting input[type="checkbox"]:hover::before { border-color: #657a93; }
+.po-setting input[type="checkbox"]:focus-visible { outline: 3px solid #7cb4ff; outline-offset: 2px; }
+.po-volume { width: 100%; height: 32px; margin: 4px 0 8px; accent-color: #315d88; cursor: pointer; }
+.po-hint { margin: 4px 0 0; color: #536175; font-size: 12px; }
+.po-popup details { margin-top: 22px; border-top: 1px solid #e0e5ec; }
+.po-popup summary { min-height: 48px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+.po-popup button { width: 100%; min-height: 44px; margin: 4px 0; padding: 9px 12px; border: 1px solid #c3cdda; border-radius: 7px; background: #edf1f6; color: #22314a; cursor: pointer; font: inherit; font-size: 13px; text-align: left; }
+.po-popup button:hover { border-color: #9aa8b8; background: #e5ebf2; }
+.po-popup a { display: inline-flex; min-height: 44px; align-items: center; color: #244970; }
+.po-popup a:focus-visible, .po-popup summary:focus-visible, .po-volume:focus-visible { outline: 3px solid #7cb4ff; outline-offset: 3px; }
+.po-confirm { margin-top: 12px; padding: 12px; border: 1px solid #d9c7c8; border-radius: 8px; background: #fbf5f5; }
+.po-confirm p { margin: 0 0 8px; }
+.po-popup ::selection { background: #c3ddff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .po-setting input[type="checkbox"]::before, .po-setting input[type="checkbox"]::after { transition: none; }
+}

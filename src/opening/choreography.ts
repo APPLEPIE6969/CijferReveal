@@ -1,0 +1,4 @@
+// Main transients in the original MP3. Late tick echoes are not extra cards.
+export const TICK_SECONDS=[.609,.733,.833,.963,1.078,1.207,1.322,1.452,1.576,1.696,1.821,1.951,2.06,2.185,2.315,2.439,2.564,2.704,2.814,2.938,3.078,3.193,3.302,3.422,3.577,3.697,3.926,4.265,4.684,5.308];
+export const REEL_START=447,STOP_MS=6470,REVEAL_MS=STOP_MS,REDUCED_STOP_MS=650;
+export const TARGET_INDEX=4+TICK_SECONDS.length;

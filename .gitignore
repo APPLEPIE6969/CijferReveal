@@ -1,0 +1,25 @@
+node_modules/
+dist/
+dist-dev/
+pack-opening-voor-somtoday/
+*.zip
+test-results/
+playwright-report/
+.impeccable/
+
+# Lokale geheimen, profielen en testhulpmiddelen horen niet op GitHub.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.har
+*.log
+SOMtoday-local-grade-test.user.js
+assets/opening-start.mp3
+assets/reel-tick.mp3
+assets/reveal-impact.mp3
+assets/inventory-music*
+SHA256SUMS.txt

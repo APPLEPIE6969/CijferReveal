@@ -1,0 +1,50 @@
+:root {--po-shield-installed:1;}
+/* Keep native result layout in place while hiding values before the adapter classifies them. */
+sl-vakresultaat-item,sl-resultaat-item-detail,sl-vakgemiddelde-item-cijfer { display:none!important; }
+sl-laatste-resultaat-item .root,sl-resultaat-item .root {visibility:hidden!important;}
+sl-resultaat-item .cijfer,sl-resultaat-item .cijfer * {visibility:hidden!important;}
+sl-cijfer-overzicht td.cijfer,sl-cijfer-overzicht td.cijfer *,sl-vakresultaten .gemiddelde-wrapper,sl-vakresultaten .gemiddelde-wrapper * { visibility:hidden!important; }
+/* No stable grade-only tooltip owner exists. Limit the deliberate tradeoff to documents with a mounted grade route. :has also covers newly created body portals before JS. */
+body:has(sl-cijfers) hmy-tooltip.hmy-tooltip,body:has(sl-cijfers) hmy-tooltip.hmy-tooltip * { display:none!important; }
+.po-safe-native {--po-beam-angle:0deg;position:relative;display:block;contain:layout style;perspective:1000px;}
+.po-safe-native.po-pending::before {content:"";position:absolute;z-index:3;pointer-events:none;inset:-1px;border:1px solid transparent;border-radius:12px;background:conic-gradient(from var(--po-beam-angle),transparent 0 72%,#d9e9ff 84%,#ffffff 89%,transparent 98%) border-box;-webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.28;animation:po-native-beam 3.2s linear infinite;}
+@keyframes po-native-beam {to{--po-beam-angle:360deg;}}
+.po-safe-native > .po-preserved-owner {display:block!important;visibility:visible!important;width:100%;position:relative;transform:rotateX(var(--po-tilt-rx,0deg)) rotateY(var(--po-tilt-ry,0deg));transform-style:preserve-3d;transition:transform 420ms cubic-bezier(.22,1,.36,1);}
+sl-cijfers .po-unsupported-owner.po-unsupported-owner {display:none!important;}
+.po-safe-native > .po-preserved-owner sl-resultaat-item .root {visibility:visible!important;}
+.po-safe-native > .po-preserved-owner sl-resultaat-item .cijfer,.po-safe-native > .po-preserved-owner sl-resultaat-item .cijfer * {visibility:visible!important;}
+.po-safe-native.po-mask-grade > .po-preserved-owner sl-resultaat-item .cijfer {visibility:visible!important;position:relative;color:transparent!important;}
+.po-safe-native.po-mask-grade > .po-preserved-owner sl-resultaat-item .cijfer * {visibility:hidden!important;}
+.po-safe-native.po-mask-grade > .po-preserved-owner sl-resultaat-item .cijfer::after {content:"?";position:absolute;inset:0;display:grid;place-items:center;color:#aab8c2;font-size:1.2em;font-weight:800;line-height:1;}
+.po-safe-native .po-native-effects {position:absolute;z-index:4;inset:0;pointer-events:none;}
+.po-safe-native .po-native-effects::before {content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(circle 110px at var(--po-tilt-gx,50%) var(--po-tilt-gy,50%),#fff8,#fff1 48%,transparent 82%);opacity:0;mix-blend-mode:screen;transition:opacity 180ms ease;}
+.po-safe-native .po-native-effects .po-open {pointer-events:auto;}
+.po-safe-native.po-is-hover .po-native-effects::before {opacity:.22;}
+.po-safe-native.po-is-tilting > .po-preserved-owner {transition-duration:80ms;}
+.po-safe-native.po-pending.po-is-hover::before,.po-safe-native.po-pending:focus-within::before {opacity:.82;}
+.po-safe-native.po-unresolved-state .po-native-effects {display:flex;align-items:center;justify-content:center;}
+.po-safe-native.po-unresolved-state .po-card-cover {position:static;opacity:1;pointer-events:auto;background:transparent;color:inherit;}
+.po-safe-native .po-native-geometry {display:flex;align-items:center;gap:16px;min-height:76px;box-sizing:border-box;transition:filter 220ms ease;}
+.po-safe-native .po-native-details {flex:1;min-width:0;}
+.po-safe-native .po-native-title {font-weight:600;}
+.po-safe-native .po-native-subtitle {font-size:.875em;opacity:.8;}
+.po-safe-native .po-native-values {display:flex;align-items:center;gap:12px;font-variant-numeric:tabular-nums;}
+.po-safe-native .po-native-grade {font-size:1.75em;font-weight:600;}
+.po-safe-native .po-placeholder {width:36px;height:24px;background:#9ca5af;border-radius:8px;filter:blur(6px);opacity:.65;}
+.po-safe-native .po-placeholder.po-weight {width:54px;height:12px;}
+.po-safe-native .po-card-cover {position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(8,12,19,.7);color:#f5f7fa;opacity:0;pointer-events:none;transition:opacity 220ms ease;border-radius:inherit;}
+.po-safe-native.po-pending:hover > .po-preserved-owner,.po-safe-native.po-pending:focus-within > .po-preserved-owner {filter:blur(2px);}
+.po-safe-native.po-pending:hover .po-card-cover,.po-safe-native.po-pending:focus-within .po-card-cover {opacity:1;}
+.po-safe-native .po-open {cursor:pointer;border:1px solid #8996a7;border-radius:8px;background:#17202c;color:#fff;padding:9px 20px;font:inherit;}
+.po-safe-native .po-open:focus-visible {outline:3px solid #7cb4ff;outline-offset:3px;}
+.po-safe-native .po-card-cover strong {font-size:11px;letter-spacing:.14em;}
+sl-tab-bar .po-inventory-tab {position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:max-content;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;line-height:inherit;cursor:pointer;white-space:nowrap;}
+sl-tab-bar .po-inventory-tab:hover {background:rgba(70,88,108,.08);}
+sl-tab-bar .po-inventory-tab:focus-visible {outline:3px solid #3275c6;outline-offset:-3px;}
+sl-tab-bar .po-inventory-tab svg {width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5;}
+sl-tab-bar .po-inventory-tab[aria-selected="true"] {font-weight:600!important;}
+sl-tab-bar .po-inventory-tab[aria-selected="true"]::before,sl-tab-bar .po-inventory-tab[aria-selected="true"]::after {position:absolute;right:0;left:0;height:2px;background:var(--po-inventory-active-border,#3275c6);content:"";}
+sl-tab-bar .po-inventory-tab[aria-selected="true"]::before {top:0;}
+sl-tab-bar .po-inventory-tab[aria-selected="true"]::after {bottom:0;}
+.po-derived-placeholder {font:inherit;color:#627184;visibility:visible!important;}
+@media(prefers-reduced-motion:reduce){.po-safe-native *{transition:none!important;}}

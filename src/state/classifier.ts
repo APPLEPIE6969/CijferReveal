@@ -1,0 +1,31 @@
+import {parseGrade} from '../somtoday/grade-parser';
+import type {ValidationProfile} from '../somtoday/validation-profile';
+import type {ResultRecord,DisplayResult,Surface} from '../somtoday/types';
+import type {State} from './schema';
+export interface ClassifiedInput { record:ResultRecord;key:string;scope:string;version:string; }
+export function classify(state:State,input:ClassifiedInput,_profile:ValidationProfile,now=Date.now()):void{
+ const {record:r,key,scope,version}=input,previous=state.records[key],grade=parseGrade(r.value);
+ const numeric=grade!==null&&r.isCijfer&&!r.isLabel&&!r.aggregate;
+ const star=r.value==='*'&&r.isCijfer&&!r.isLabel&&!r.aggregate;
+ // Upgrade legacy observed stars without resetting already opened packs.
+ if(previous?.version===version&&(previous.state==='opened'||previous.state==='pending'&&previous.display))return;
+ let status:'observed-nonnumeric'|'baseline'|'pending'|'unresolved'='unresolved';
+ // Every observed individual numeric/star version can be opened. This policy
+ // must work on a fresh installation and when a teacher publishes a former *.
+ // Existing collection entries are immutable snapshots, including revisions.
+ if(star||numeric)status='pending';
+ const display:DisplayResult|undefined=(numeric||star)&&status!=='unresolved'?{key,version,subject:r.subject,description:r.description,date:r.date,weight:r.weight,value:r.value,grade}:undefined;
+ state.records[key]={key,scope,version,state:status,numeric,firstSeen:previous?.firstSeen??now,lastResolvedState:star?'observed-nonnumeric':status==='unresolved'?previous?.lastResolvedState??previous?.state:status,display};
+}
+export function noteCoverage(state:State,scope:string,surface:Surface,profile:ValidationProfile){
+ const c=state.coverage[scope]??{overview:false,subject:false,armed:false};
+ if(surface==='overview')c.overview=true;if(surface==='subject')c.subject=true;
+ c.armed=c.armed||(profile.numericValidated&&profile.baselineCoverageValidated&&c.overview&&c.subject);
+ state.coverage[scope]=c;
+}
+export function queue(state:State,scope:string){return Object.values(state.records).filter(r=>r.scope===scope&&r.state==='pending'&&r.display).sort((a,b)=>a.firstSeen-b.firstSeen||a.key.localeCompare(b.key));}
+export function markOpened(state:State,key:string,version:string,scope:string,now=Date.now()){
+ const r=state.records[key];if(!r||r.scope!==scope||r.state!=='pending'||r.version!==version||!r.display)throw new Error('Cijfer is gewijzigd. Opnieuw controleren.');
+ r.state='opened';state.collection.push({...r.display,scope,openedAt:now});
+}
+export function collection(state:State,scope:string){return state.collection.filter(r=>r.scope===scope).sort((a,b)=>b.openedAt-a.openedAt||a.key.localeCompare(b.key));}
