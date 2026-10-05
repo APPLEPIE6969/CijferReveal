@@ -10,7 +10,8 @@ De bevestigde sfeer is **donker en rustig**: grafiet als basis, gedempt blauw al
 
 - Toon de kop “SomToday Pack Opening” en de korte uitleg over de SOMtoday-pack opening.
 - Bied precies één link aan: [Bekijk het project op GitHub](https://github.com/js664/CijferReveal). Open die in een nieuw tabblad met veilige `rel`-attributen.
-- Houd de overige projectcontext als gewone tekst; voeg geen tweede bestemming of concurrerende oproep toe.
+- Toon daarnaast een uitgeschakelde knop met “Chrome web store download (Coming Soon!)”. De knop heeft een hovereffect en geen link of klikactie.
+- Het Chrome-icoon komt onveranderd uit Googles officiële merkpagina. Gebruik geen badge die zegt dat de extensie al beschikbaar is.
 - Behoud zichtbare toetsenbordfocus, een korte hoverreactie en ondersteuning voor `prefers-reduced-motion`.
 
 ## Schermgedrag

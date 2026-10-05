@@ -23,7 +23,7 @@
         display: grid;
         place-items: center;
         padding: 28px;
-        overflow: hidden;
+        overflow-x: hidden;
         color: var(--ink);
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background:
@@ -111,6 +111,21 @@
       .repo-link svg { width: 22px; height: 22px; flex: none; }
       .repo-link .arrow { width: 18px; height: 18px; opacity: .7; transition: transform 180ms ease; }
       .repo-link:hover .arrow { transform: translate(2px, -2px); }
+      .store-button {
+        width: 100%;
+        margin-top: 12px;
+        padding-block: 14px;
+        justify-content: flex-start;
+        background: #222d39;
+        border-color: #536576;
+        color: #dce6ef;
+        font-family: inherit;
+        line-height: 1.45;
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+      .store-button:hover { background: #2c3a49; border-color: #83a2be; transform: translateY(-2px); box-shadow: none; }
+      .store-button img { width: 24px; height: 24px; flex: none; object-fit: contain; }
       footer { margin-top: 26px; color: #929eac; font-size: 12px; letter-spacing: .015em; }
       @keyframes arrive { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       @media (max-width: 480px) {
@@ -137,6 +152,10 @@
         </span>
         <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
       </a>
+      <button class="repo-link store-button" type="button" disabled>
+        <img src="assets/chrome.webp" width="24" height="24" alt="" aria-hidden="true" />
+        <span>Chrome web store download (Coming Soon!)</span>
+      </button>
     </main>
   </body>
 </html>
