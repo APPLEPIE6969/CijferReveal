@@ -5,6 +5,7 @@ import {nativeCardValues,presentCard,type Presentation} from '../spoiler/recent-
 import {presentDerived,presentOverview} from '../spoiler/derived';
 import {injectInventoryTab,type InventoryTabController} from '../collection/CollectionTab';
 import {listenRoutes} from './route-controller';
+import type {State} from '../state/schema';
 import {diagnose,diagnosticReport,diagnosticStage,isConcealed} from '../dev/diagnostics';
 if(import.meta.env.DEV)diagnosticStage('document-start','document',!document.querySelector('sl-laatste-resultaat-item,sl-vakresultaat-item'));
 let cssMeasured=false;
@@ -79,7 +80,12 @@ function setup(){
 }
 const initial=new MutationObserver(()=>{setup();if(document.body&&document.querySelector('sl-root'))initial.disconnect();});initial.observe(document,{subtree:true,childList:true});setup();
 const unroute=listenRoutes(()=>{if(history.state?.[INVENTORY_HISTORY]&&location.href===inventoryURL&&!experience.inventoryActive&&!pendingInventory){pendingInventory=true;inventoryTab?.setActive(true);tryStartInventory();window.setTimeout(tryStartInventory,80);window.setTimeout(tryStartInventory,240);}else if((pendingInventory||experience.inventoryActive)&&(!history.state?.[INVENTORY_HISTORY]||location.href!==inventoryURL))closeInventory(true);if(experience.active&&!experience.inventoryActive&&!document.querySelector('sl-cijfers'))experience.close();schedule();});
-const storageListener=(changes:Record<string,chrome.storage.StorageChange>,area:string)=>{if(area==='local'&&changes.poState)void bridge.refresh().catch(()=>{failed=true;schedule();});};chrome.storage.onChanged.addListener(storageListener);
+const storageListener=(changes:Record<string,chrome.storage.StorageChange>,area:string)=>{
+ if(area!=='local'||!changes.poState)return;
+ const before=changes.poState.oldValue as Partial<State>|undefined,after=changes.poState.newValue as Partial<State>|undefined;
+ if((before?.resetGeneration??0)!==(after?.resetGeneration??0))experience.close();
+ void bridge.refresh().catch(()=>{failed=true;schedule();});
+};chrome.storage.onChanged.addListener(storageListener);
 void bridge.start();
 if(import.meta.env.DEV)chrome.runtime.onMessage.addListener((m,_sender,reply)=>{if(m?.protocol==='po/diagnostics')reply(diagnosticReport());});
 window.addEventListener('pageshow',event=>{if(event.persisted){void bridge.refresh().catch(()=>{failed=true;schedule();});schedule();}});

@@ -23,7 +23,7 @@ export class Experience {
  this.inerted=[...document.body.children].filter(n=>n!==this.host&&n instanceof HTMLElement).map(n=>({node:n as HTMLElement,value:(n as HTMLElement).inert}));this.inerted.forEach(({node})=>node.inert=true);this.scroll=document.documentElement.style.overflow;document.documentElement.style.overflow='hidden';
  const s=this.state();if(!s){this.close();return;}const rest=queue(s,scope).filter(r=>r.key!==result.key).map(r=>r.display!);const results=[result,...rest];let index=0;
  const settings={...s.settings};
- const commit=async(r:DisplayResult)=>{await command({kind:'open',key:r.key,version:r.version,scope});window.setTimeout(()=>{void this.changed().catch(()=>{/* The durable open succeeded; refresh native grade data after the reveal. */});},150);};
+ const commit=async(r:DisplayResult)=>{await command({kind:'open',key:r.key,version:r.version,scope,generation:s.resetGeneration});window.setTimeout(()=>{void this.changed().catch(()=>{/* The durable open succeeded; refresh native grade data after the reveal. */});},150);};
  const render=()=>this.root!.render(<OpeningOverlay key={`${results[index].key}:${index}`} result={results[index]} settings={settings} audio={this.audio} commit={commit} close={()=>this.close()} next={index<results.length-1?()=>{index++;render();}:undefined} position={index+1} total={results.length}/>);render();
  }
  showInventory(scope:string|null,origin:HTMLElement,route:HTMLElement|null,verified:boolean,onGoGrades:()=>void){if(this.active||!route?.parentElement)return false;this.origin=origin;this.collectionMode=true;

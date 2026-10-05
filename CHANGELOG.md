@@ -1,5 +1,13 @@
 # Wat is er veranderd?
 
+## Versie 0.2.1 — 5 oktober 2026
+
+- Het extensievenster heeft alleen een versienummer en **Reset extensie**.
+- Reset wist je inventaris. Je kunt de cijfers op een geopende pagina meteen opnieuw openen.
+- Reset stopt ook een opening die nog bezig is.
+- Nieuwe cijfers blijven herkenbaar als tegelijk de opgeslagen gegevens worden bijgewerkt.
+- Reset en instellingen kunnen alleen vanuit het extensievenster worden aangepast. Binnenkomende opdrachten worden strenger gecontroleerd.
+
 ## Versie 0.2.0 — 5 oktober 2026
 
 - Ook cijfers die al zichtbaar waren vóór installatie kunnen nu worden geopend.

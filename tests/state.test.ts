@@ -1,7 +1,7 @@
 import {it,expect} from 'vitest';
 import {newState} from '../src/state/schema';
 import {migrate} from '../src/state/migrations';
-import {classify,noteCoverage,queue,markOpened,collection} from '../src/state/classifier';
+import {classify,noteCoverage,queue,markOpened,collection,resetOpenedResults} from '../src/state/classifier';
 import {LIVE_PROFILE} from '../src/somtoday/validation-profile';
 import {record,fixtureProfile,key,scope,version} from './fixtures';
 const input=(value='8,3',v=version,k=key)=>({record:record({value}),key:k,scope,version:v});
@@ -28,3 +28,27 @@ it('a published numeric value replaces an unresolved legacy record without requi
 it('legacy baseline results become openable, while already opened results remain opened',()=>{const s=newState();classify(s,input(),LIVE_PROFILE);s.records[key].state='baseline';classify(s,input(),LIVE_PROFILE);expect(s.records[key].state).toBe('pending');markOpened(s,key,version,scope);classify(s,input(),LIVE_PROFILE);expect(s.records[key].state).toBe('opened');});
 it('newly detected numeric records join the queue after installation without coverage arming',()=>{const s=newState();classify(s,input(),LIVE_PROFILE,1);markOpened(s,key,version,scope,2);classify(s,input('6,75','d'.repeat(64),'e'.repeat(64)),LIVE_PROFILE,3);expect(queue(s,scope).map(r=>r.display?.value)).toEqual(['6,75']);expect(s.collection.map(c=>c.value)).toEqual(['8,3']);});
 it('archive survives numeric revisions and migration',()=>{const s=newState();s.coverage[scope]={overview:true,subject:true,armed:true};classify(s,input(),fixtureProfile);markOpened(s,key,version,scope);classify(s,input('9,7','d'.repeat(64)),fixtureProfile);expect(migrate(JSON.parse(JSON.stringify(s))).collection[0].value).toBe('8,3');});
+it('reset clears history and makes known numeric and star results openable immediately without changing identities',()=>{
+ const s=newState(),salt=s.salt;classify(s,input(),LIVE_PROFILE);markOpened(s,key,version,scope);
+ const star=input('*','d'.repeat(64),'e'.repeat(64));classify(s,star,LIVE_PROFILE);markOpened(s,star.key,star.version,scope);
+ s.settings={sound:false,volume:0,motion:'reduce'};resetOpenedResults(s);
+ expect(s.salt).toBe(salt);expect(s.resetGeneration).toBe(1);expect(s.collection).toEqual([]);expect(queue(s,scope)).toHaveLength(2);
+ classify(s,input(),LIVE_PROFILE);classify(s,star,LIVE_PROFILE);
+ expect(queue(migrate(JSON.parse(JSON.stringify(s))),scope)).toHaveLength(2);expect(s.settings).toMatchObject({sound:true,volume:.7,motion:'system'});
+});
+it('reset cancels stale openings, preserves unresolved cards, and still accepts newly published grades',()=>{
+ const s=newState();classify(s,input(),LIVE_PROFILE);const generation=s.resetGeneration;
+ classify(s,{...input('voldoende','d'.repeat(64),'e'.repeat(64)),record:record({value:'voldoende',isLabel:true})},LIVE_PROFILE);
+ resetOpenedResults(s);expect(()=>markOpened(s,key,version,scope,10,generation)).toThrow();expect(s.collection).toEqual([]);
+ expect(s.records['e'.repeat(64)].state).toBe('unresolved');
+ markOpened(s,key,version,scope,11,s.resetGeneration);
+ classify(s,input('7,25','f'.repeat(64),'d'.repeat(64)),LIVE_PROFILE);
+ expect(queue(s,scope).map(r=>r.display?.value)).toEqual(['7,25']);
+});
+it('existing installations migrate a missing reset generation to zero',()=>{
+ const legacy:Partial<ReturnType<typeof newState>>=newState();delete legacy.resetGeneration;expect(migrate(legacy).resetGeneration).toBe(0);
+});
+it('reset removes the opened lock from legacy records without a display snapshot',()=>{
+ const s=newState();classify(s,input(),LIVE_PROFILE);markOpened(s,key,version,scope);delete s.records[key].display;
+ resetOpenedResults(s);expect(s.records[key].state).toBe('unresolved');classify(s,input(),LIVE_PROFILE);expect(queue(s,scope)).toHaveLength(1);
+});

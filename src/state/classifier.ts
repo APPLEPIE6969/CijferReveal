@@ -1,7 +1,7 @@
 import {parseGrade} from '../somtoday/grade-parser';
 import type {ValidationProfile} from '../somtoday/validation-profile';
 import type {ResultRecord,DisplayResult,Surface} from '../somtoday/types';
-import type {State} from './schema';
+import {defaultSettings,type State} from './schema';
 export interface ClassifiedInput { record:ResultRecord;key:string;scope:string;version:string; }
 export function classify(state:State,input:ClassifiedInput,_profile:ValidationProfile,now=Date.now()):void{
  const {record:r,key,scope,version}=input,previous=state.records[key],grade=parseGrade(r.value);
@@ -24,8 +24,19 @@ export function noteCoverage(state:State,scope:string,surface:Surface,profile:Va
  state.coverage[scope]=c;
 }
 export function queue(state:State,scope:string){return Object.values(state.records).filter(r=>r.scope===scope&&r.state==='pending'&&r.display).sort((a,b)=>a.firstSeen-b.firstSeen||a.key.localeCompare(b.key));}
-export function markOpened(state:State,key:string,version:string,scope:string,now=Date.now()){
- const r=state.records[key];if(!r||r.scope!==scope||r.state!=='pending'||r.version!==version||!r.display)throw new Error('Cijfer is gewijzigd. Opnieuw controleren.');
+export function markOpened(state:State,key:string,version:string,scope:string,now=Date.now(),generation=state.resetGeneration){
+ const r=state.records[key];if(generation!==state.resetGeneration||!r||r.scope!==scope||r.state!=='pending'||r.version!==version||!r.display)throw new Error('Cijfer is gewijzigd. Opnieuw controleren.');
  r.state='opened';state.collection.push({...r.display,scope,openedAt:now});
+}
+export function resetOpenedResults(state:State){
+ // Keep identities and observations so already loaded pages can reopen packs
+ // immediately. A fresh salt would discard those mappings until a new GET.
+ state.resetGeneration++;
+ state.collection=[];state.coverage={};state.settings={...defaultSettings};
+ for(const r of Object.values(state.records)){
+  if(['opened','baseline','pending','observed-nonnumeric'].includes(r.state)){
+   r.state=r.display?'pending':'unresolved';r.lastResolvedState=r.numeric?'pending':'observed-nonnumeric';
+  }
+ }
 }
 export function collection(state:State,scope:string){return state.collection.filter(r=>r.scope===scope).sort((a,b)=>b.openedAt-a.openedAt||a.key.localeCompare(b.key));}

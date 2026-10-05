@@ -188,22 +188,42 @@ test('two stars including a legacy observed record open, reveal stars and persis
  }finally{await f.dispose();}
 });
 
-test('popup uses clear local settings, correct pending copy and confirmed reset',async()=>{
+test('popup contains only version and reset, and reopens grades in an existing tab without reload',async()=>{
  const f=await launch(true);try{
+  await expect(f.page.getByRole('button',{name:'Open cijfer'})).toBeVisible();
+  await f.page.locator('.po-safe-native').hover();await f.page.getByRole('button',{name:'Open cijfer'}).click();
+  const cdp=await f.context.newCDPSession(f.page);await clickAXButton(cdp,'Open Cijfer');
+  await expect.poll(async()=> (await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState)).collection.length,{timeout:12000}).toBe(1);
+  await expect.poll(async()=> (await cdp.send('Accessibility.getFullAXTree')).nodes.some(n=>!n.ignored&&n.role?.value==='button'&&n.name?.value==='Terug naar SOMtoday'),{timeout:12000}).toBe(true);
+  await clickAXButton(cdp,'Terug naar SOMtoday');await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(0);
+  const before=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);
   const popup=await f.context.newPage();await popup.goto(`chrome-extension://${f.id}/popup.html`);
-  await expect(popup.getByRole('heading',{name:'Pack Opening voor SOMtoday'})).toBeVisible();
-  await expect(popup.locator('.po-popup-count')).toHaveText('1 ongeopend cijfer');
-  const sound=popup.getByRole('checkbox',{name:'Geluid'}),motion=popup.getByRole('checkbox',{name:'Verminder beweging'});
-  await expect(sound).not.toBeChecked();await sound.check();await motion.check();
-  await expect.poll(async()=>f.worker.evaluate(async()=>{const s=(await chrome.storage.local.get('poState')).poState;return [s.settings.sound,s.settings.motion];})).toEqual([true,'reduce']);
-  await popup.getByText('Instellingen en gegevens').click();await popup.getByRole('button',{name:'Extensie opnieuw instellen'}).click();
-  await expect(popup.getByText('Alle lokale gegevens wissen? De baseline wordt opnieuw opgebouwd.')).toBeVisible();
-  await popup.getByRole('button',{name:'Annuleren'}).click();
-  const saved=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);expect(saved.records[key].state).toBe('pending');
+  await expect(popup.locator('.po-popup-version')).toHaveText(`v${await f.worker.evaluate(()=>chrome.runtime.getManifest().version)}`);await expect(popup.getByRole('button')).toHaveCount(1);
+  await expect(popup.getByRole('checkbox')).toHaveCount(0);await expect(popup.getByRole('heading')).toHaveCount(0);
+  await popup.getByRole('button',{name:'Reset extensie'}).click();
+  await expect(popup.getByRole('status')).toHaveText('Gereset. Je kunt alle cijfers opnieuw openen.');
+  const after=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);
+  expect(after.collection).toEqual([]);expect(after.salt).toBe(before.salt);expect(after.resetGeneration).toBe(before.resetGeneration+1);
+  await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(1);await expect(f.page.locator('.cijfer')).toHaveText('?');
+  await popup.setViewportSize({width:240,height:116});await popup.screenshot({path:'.impeccable/review/popup.png'});
+  await f.page.reload();await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(1);
  }finally{await f.dispose();}
 });
 
-
+test('reset closes an in-progress opening and a newly published grade still becomes available',async()=>{
+ const f=await launch(true);try{
+  await f.page.locator('.po-safe-native').hover();await f.page.getByRole('button',{name:'Open cijfer'}).click();
+  const cdp=await f.context.newCDPSession(f.page);await clickAXButton(cdp,'Open Cijfer');
+  const popup=await f.context.newPage();await popup.goto(`chrome-extension://${f.id}/popup.html`);await popup.getByRole('button',{name:'Reset extensie'}).click();
+  await expect(f.page.locator('.po-experience-host')).toHaveCount(0);await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(1);
+  const published={...raw,links:[{rel:'self',id:'new-after-reset',type:raw.$type}],formattedResultaat:'7,25',omschrijving:'Nieuwe toets'};
+  await f.context.route('**/rest/v1/geldendvoortgangsdossierresultaten/leerling/fixture-student',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items:[raw,published]})}));
+  await f.page.evaluate(async next=>{await new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('GET','/rest/v1/geldendvoortgangsdossierresultaten/leerling/fixture-student');xhr.responseType='json';xhr.onload=resolve;xhr.onerror=reject;xhr.send();});document.querySelector('sl-laatsteresultaten').insertAdjacentHTML('beforeend',next);},card.replaceAll('8,3','7,25').replaceAll('Hoofdstuk 3','Nieuwe toets'));
+  await expect(f.page.getByRole('button',{name:'Open cijfer'})).toHaveCount(2);
+  const saved=await f.worker.evaluate(async()=> (await chrome.storage.local.get('poState')).poState);
+  expect(Object.values(saved.records).find(r=>r.display?.description==='Nieuwe toets')).toMatchObject({state:'pending',display:{value:'7,25',grade:7.25}});expect(saved.collection).toEqual([]);
+ }finally{await f.dispose();}
+});
 
 test('mobile landing respects its CSS gap and Enter advances into the next subject preview',async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:5173/tester.html');

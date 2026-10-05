@@ -30,3 +30,16 @@ it('a late unscoped response cannot overwrite the canonical numeric result',asyn
   expect([...bridge.records.values()][0].record.value).toBe('6,75');expect(queue(state,scope)[0].display?.value).toBe('6,75');
  }finally{bridge.dispose();}
 });
+it('storage refresh and newly arriving grades are serialized so neither update is lost',async()=>{
+ const state=newState();vi.mocked(command).mockImplementation(async c=>{if(c.kind==='observe')for(const input of c.inputs)classify(state,input,LIVE_PROFILE);return state;});
+ const bridge=new Bridge(()=>{},()=>{});await bridge.start();
+ let finishRead!:(state:ReturnType<typeof newState>)=>void;
+ vi.mocked(command).mockImplementationOnce(()=>new Promise(resolve=>{finishRead=resolve;}));
+ try{
+  const refresh=bridge.refresh();await vi.waitFor(()=>expect(finishRead).toBeDefined());
+  window.dispatchEvent(new MessageEvent('message',{source:window,origin:location.origin,data:{protocol:'po/1',surface:'recent',scope:'a'.repeat(64),complete:false,records:[record({value:'7,25'})]}}));
+  await Promise.resolve();expect(bridge.records.size).toBe(0);
+  finishRead(state);await refresh;await vi.waitFor(()=>expect(bridge.records.size).toBe(1));
+  expect(queue(bridge.state!,'a'.repeat(64))[0].display?.value).toBe('7,25');
+ }finally{bridge.dispose();}
+});

@@ -24,7 +24,7 @@ Dit werkt met Chrome, Edge, Brave en Helium op een computer. Je hoeft niet te ku
 - Daarna zie je het echte cijfer. Ook een `*` wordt gewoon als `*` getoond.
 - Druk op Enter om naar het volgende cijfer te gaan. Escape sluit het scherm.
 - In **Inventaris** vind je de cijfers die je al hebt geopend.
-- Klik op het extensie-icoon om geluid of beweging aan te passen.
+- Klik op het extensie-icoon voor het versienummer en **Reset extensie**. Die knop wist je inventaris en zet je cijfers weer klaar om te openen.
 
 ## Geen knop om te openen?
 

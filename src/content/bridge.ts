@@ -14,7 +14,11 @@ export class Bridge {
  const message=validateObservation(event.data);if(!message)return;
  this.chain=this.chain.then(()=>this.consume(message)).catch(()=>this.failed());
  };
- async start(){window.addEventListener('message',this.listener);try{this.state=await command({kind:'read'});this.hello();const queued=this.waiting.splice(0);for(const m of queued)if(m)await this.consume(m);this.changed();}catch{this.failed();}}
+ start():Promise<void>{
+  window.addEventListener('message',this.listener);
+  this.chain=this.chain.then(async()=>{if(this.disposed)return;this.state=await command({kind:'read'});this.hello();const queued=this.waiting.splice(0);for(const m of queued)if(m)await this.consume(m);this.changed();}).catch(()=>this.failed());
+  return this.chain;
+ }
  private hello(){if(this.state)window.postMessage({protocol:'po/init',salt:this.state.salt},location.origin);}
  private async consume(message:NonNullable<ReturnType<typeof validateObservation>>){
  if(this.disposed)return;
@@ -36,6 +40,11 @@ export class Bridge {
  if(inputs.length){this.state=await command({kind:'observe',inputs,scope:message.scope??inputs[0].scope,surface:message.surface});this.changed();}
  if(message.scope&&this.waiting.length){const pending=this.waiting.splice(0);for(const p of pending)if(p)await this.consume(p);}
  }
- async refresh(){const next=await command({kind:'read'});if(this.state?.salt!==next.salt){this.records.clear();this.activeScope=null;}this.state=next;this.hello();this.changed();}
+ refresh():Promise<void>{
+  // Storage refreshes and network observations share one queue. Otherwise a
+  // delayed read can overwrite the state of a freshly detected grade.
+  const task=this.chain.then(async()=>{if(this.disposed)return;const next=await command({kind:'read'});if(this.state?.salt!==next.salt){this.records.clear();this.activeScope=null;this.waiting=[];}this.state=next;this.hello();this.changed();});
+  this.chain=task.catch(()=>{});return task;
+ }
  dispose(){this.disposed=true;window.removeEventListener('message',this.listener);this.records.clear();}
 }
