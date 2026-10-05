@@ -1,5 +1,8 @@
 // Numerical dependencies are unproven. Never calculate or release a guessed summary.
-export const DERIVED_SELECTOR='sl-vakgemiddelde-item-cijfer, sl-vakresultaten .gemiddelde-wrapper';
+// Keep standalone averages masked, but do not add a repeated warning after
+// every average row on subject detail pages. Their values remain protected by
+// the static shield; only actual result cards can be opened there.
+export const DERIVED_SELECTOR='sl-vakgemiddelde-item-cijfer';
 export function presentDerived(root:Element){
  for(const owner of root.querySelectorAll<HTMLElement>(DERIVED_SELECTOR)){
  if(owner.nextElementSibling?.classList.contains('po-derived-placeholder'))continue;

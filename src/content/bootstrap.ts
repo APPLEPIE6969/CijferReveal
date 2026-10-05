@@ -5,6 +5,7 @@ import {nativeCardValues,presentCard,type Presentation} from '../spoiler/recent-
 import {presentDerived,presentOverview} from '../spoiler/derived';
 import {injectInventoryTab,type InventoryTabController} from '../collection/CollectionTab';
 import {listenRoutes} from './route-controller';
+import {syncUpdateNotice,disposeUpdateNotice} from './update-notice';
 import type {State} from '../state/schema';
 import {diagnose,diagnosticReport,diagnosticStage,isConcealed,updateCardDiagnostic} from '../dev/diagnostics';
 if(import.meta.env.DEV)diagnosticStage('document-start','document',!document.querySelector('sl-laatste-resultaat-item,sl-vakresultaat-item'));
@@ -89,6 +90,7 @@ function reconcile(){
 let shellObserver:MutationObserver|null=null,bodyObserver:MutationObserver|null=null;
 function setup(){
  if(!document.body)return;
+ syncUpdateNotice();
  if(import.meta.env.DEV&&!cssMeasured&&getComputedStyle(document.documentElement).getPropertyValue('--po-shield-installed').trim()==='1'){cssMeasured=true;diagnosticStage('static-css','document',true);}
  const shell=document.querySelector('sl-root');
  if(shell&&!shellObserver){shellObserver=new MutationObserver(records=>{
@@ -98,7 +100,7 @@ function setup(){
  schedule();
 }
 const initial=new MutationObserver(()=>{setup();if(document.body&&document.querySelector('sl-root'))initial.disconnect();});initial.observe(document,{subtree:true,childList:true});setup();
-const unroute=listenRoutes(()=>{if(syncExcludedRoute()){schedule();return;}completeCijfersHop();if(!pendingCijfersHop&&history.state?.[INVENTORY_HISTORY]&&location.href===inventoryURL&&!experience.inventoryActive&&!pendingInventory){pendingInventory=true;inventoryTab?.setActive(true);tryStartInventory();window.setTimeout(tryStartInventory,80);window.setTimeout(tryStartInventory,240);}else if(!pendingCijfersHop&&(pendingInventory||experience.inventoryActive)&&(!history.state?.[INVENTORY_HISTORY]||location.href!==inventoryURL))closeInventory(true);if(experience.active&&!experience.inventoryActive&&!document.querySelector('sl-cijfers'))experience.close();schedule();});
+const unroute=listenRoutes(()=>{syncUpdateNotice();if(syncExcludedRoute()){schedule();return;}completeCijfersHop();if(!pendingCijfersHop&&history.state?.[INVENTORY_HISTORY]&&location.href===inventoryURL&&!experience.inventoryActive&&!pendingInventory){pendingInventory=true;inventoryTab?.setActive(true);tryStartInventory();window.setTimeout(tryStartInventory,80);window.setTimeout(tryStartInventory,240);}else if(!pendingCijfersHop&&(pendingInventory||experience.inventoryActive)&&(!history.state?.[INVENTORY_HISTORY]||location.href!==inventoryURL))closeInventory(true);if(experience.active&&!experience.inventoryActive&&!document.querySelector('sl-cijfers'))experience.close();schedule();});
 const storageListener=(changes:Record<string,chrome.storage.StorageChange>,area:string)=>{
  if(area!=='local'||!changes.poState)return;
  const before=changes.poState.oldValue as Partial<State>|undefined,after=changes.poState.newValue as Partial<State>|undefined;
@@ -108,4 +110,4 @@ const storageListener=(changes:Record<string,chrome.storage.StorageChange>,area:
 void bridge.start();
 if(import.meta.env.DEV)chrome.runtime.onMessage.addListener((m,_sender,reply)=>{if(m?.protocol==='po/diagnostics')reply(diagnosticReport());});
 window.addEventListener('pageshow',event=>{if(event.persisted){void bridge.refresh().catch(()=>{failed=true;schedule();});schedule();}});
-window.addEventListener('pagehide',event=>{if(event.persisted){closeInventory(false);experience.close();return;}closeInventory(false);inventoryTab?.remove();inventoryTab=null;initial.disconnect();shellObserver?.disconnect();bodyObserver?.disconnect();gradeObserver?.disconnect();unroute();clear();bridge.dispose();experience.dispose();chrome.storage.onChanged.removeListener(storageListener);});
+window.addEventListener('pagehide',event=>{if(event.persisted){closeInventory(false);experience.close();return;}closeInventory(false);inventoryTab?.remove();inventoryTab=null;initial.disconnect();shellObserver?.disconnect();bodyObserver?.disconnect();gradeObserver?.disconnect();unroute();clear();disposeUpdateNotice();bridge.dispose();experience.dispose();chrome.storage.onChanged.removeListener(storageListener);});

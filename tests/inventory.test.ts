@@ -20,10 +20,15 @@ describe('grade inventory',()=>{
   expect(filterInventory(entries,{query:'',subject:'Engels',tier:'',sort:'newest'}).map(e=>e.key)).toEqual(['b']);
   expect(filterInventory(entries,{query:'',subject:'',tier:'bronze',sort:'newest'}).map(e=>e.key)).toEqual(['b']);
  });
+ it('filters a star as a nonnumeric result by group, subject, and its visible value',()=>{
+  expect(filterInventory(entries,{query:'',subject:'',tier:'neutral',sort:'newest'}).map(e=>e.key)).toEqual(['c']);
+  expect(filterInventory(entries,{query:'',subject:'Bedrijfseconomie',tier:'',sort:'newest'}).map(e=>e.key)).toEqual(['c']);
+  expect(filterInventory(entries,{query:'*',subject:'',tier:'',sort:'newest'}).map(e=>e.key)).toEqual(['c']);
+ });
  it('matches searches regardless of accents or case',()=>{
   const accented=[{...entries[0],subject:'Frans',description:'Écouter et parler'}];
   expect(filterInventory(accented,{query:'ecouter',subject:'',tier:'',sort:'newest'}).map(e=>e.key)).toEqual(['a']);
  });
  it('summarizes opened numeric grades without treating a star as zero',()=>{const stats=inventoryStats(entries);expect(stats.total).toBe(3);expect(stats.average).toBeCloseTo(7.05);expect(stats.highest).toBe(8.3);});
- it('derives only actual subject labels and readable tier names',()=>{expect(inventorySubjects(entries)).toEqual(['Bedrijfseconomie','Engels','Wiskunde A']);expect(tierLabel('iridescent')).toBe('9,5 en hoger');});
+ it('derives only actual subject labels and readable tier names',()=>{expect(inventorySubjects(entries)).toEqual(['Bedrijfseconomie','Engels','Wiskunde A']);expect(tierLabel('iridescent')).toBe('9,5 en hoger');expect(tierLabel('neutral')).toBe('Letter/teken of *');});
 });

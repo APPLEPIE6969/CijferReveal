@@ -50,7 +50,12 @@ export class Bridge {
   const task=this.chain.then(async()=>{if(this.disposed)return;const next=await command({kind:'read'});if(this.state?.salt!==next.salt){this.records.clear();this.activeScope=null;this.waiting=[];}this.state=next;this.rebind();this.hello();this.changed();});
   this.chain=task.catch(()=>{});return task;
  }
- pause(){this.suspended=true;this.records.clear();this.activeScope=null;this.waiting=[];window.postMessage({protocol:'po/disable'},location.origin);}
+ // A route suspension stops observations while Vakgemiddelden is visible, but
+ // keep the last scoped snapshot in this document. SOMtoday often reuses its
+ // SPA view when returning to Laatste cijfers and does not refetch the result
+ // endpoint; dropping the snapshot would turn valid cards into false
+ // "Cijfer nog niet gekoppeld" states until the user reloads.
+ pause(){this.suspended=true;this.waiting=[];window.postMessage({protocol:'po/disable'},location.origin);}
  resume(){if(!this.suspended)return;this.suspended=false;void this.refresh().catch(()=>this.failed());}
  dispose(){this.disposed=true;window.removeEventListener('message',this.listener);this.records.clear();}
 }

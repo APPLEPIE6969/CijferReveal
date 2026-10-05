@@ -1,5 +1,12 @@
 # Wat is er veranderd?
 
+## Versie 0.2.4 — 5 oktober 2026
+
+- Letter- en Unicodecijfers openen ook op vakpagina's.
+- Teruggaan uit Vakgemiddelden geeft geen koppelingsfout meer.
+- De inventarisfilters werken ook met `*`.
+- Op de pagina Cijfers verschijnt een melding als er een update is.
+
 ## Versie 0.2.3 — 5 oktober 2026
 
 - Letter- en Unicodecijfers worden nu herkend.

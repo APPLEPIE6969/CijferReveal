@@ -1,4 +1,4 @@
-# Controles voor versie 0.2.3
+# Controles voor versie 0.2.4
 
 Deze versie is vóór publicatie gecontroleerd.
 

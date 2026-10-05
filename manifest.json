@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Pack Opening voor SOMtoday",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Open zichtbare cijfers met een lokale pack opening. Cijfers zijn vooraf bepaald.",
   "minimum_chrome_version": "111",
   "permissions": [
     "storage"
   ],
   "host_permissions": [
-    "https://leerling.somtoday.nl/*"
+    "https://leerling.somtoday.nl/*",
+    "https://api.github.com/*"
   ],
   "background": {
     "service_worker": "worker.js",

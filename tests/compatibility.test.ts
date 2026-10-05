@@ -57,6 +57,10 @@ it.each(['O','V','G','好','🧪','e\u0301'])('projects and joins a displayed Un
  expect(records).toHaveLength(1);
  expect(joinCard({...tuple,value},records)?.value).toBe(value);
 });
+it.each(['O','V','G','好','🧪','e\u0301'])('matches a Unicode label on a subject result card: %s',value=>{
+ const records=projectResponse({items:[rawRecord({formattedResultaat:value,isCijfer:false,isLabel:true})]},{...resource,surface:'subject'});
+ expect(joinCard({...tuple,kind:'subject',subject:'Hoofdstuk 3',subtitle:'4 okt',value},records)?.value).toBe(value);
+});
 it('both overview routes use the same student scope as the recent-result routes',()=>{
  for(const dossier of ['voortgangs','examen'])expect(matchResource(`/rest/v1/geldend${dossier}dossierresultaten/leerling/cijferoverzicht/another-student`,'https://leerling.somtoday.nl')).toMatchObject({surface:'overview',scopeInput:'another-student',family:dossier==='examen'?'exam':'progression'});
 });

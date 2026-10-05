@@ -22,4 +22,4 @@ export function inventoryStats(entries:CollectionEntry[]){
  return {total:entries.length,average:numeric.length?numeric.reduce((sum,value)=>sum+value,0)/numeric.length:null,highest:numeric.length?numeric.reduce((highest,value)=>Math.max(highest,value),-Infinity):null};
 }
 export function inventorySubjects(entries:CollectionEntry[]){return [...new Set(entries.map(entry=>entry.subject).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'nl-NL'));}
-export function tierLabel(name:string){return ({crimson:'Lager dan 5,5',bronze:'5,5–6,4',steel:'6,5–7,4',gold:'7,5–8,4',electric:'8,5–9,4',iridescent:'9,5 en hoger',neutral:'Niet numeriek'} as Record<string,string>)[name]??name;}
+export function tierLabel(name:string){return ({crimson:'Lager dan 5,5',bronze:'5,5–6,4',steel:'6,5–7,4',gold:'7,5–8,4',electric:'8,5–9,4',iridescent:'9,5 en hoger',neutral:'Letter/teken of *'} as Record<string,string>)[name]??name;}
