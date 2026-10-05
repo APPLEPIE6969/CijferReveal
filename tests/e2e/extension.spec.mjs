@@ -5,6 +5,16 @@ import {tmpdir} from 'node:os';
 import {createHash} from 'node:crypto';
 const hash=(...parts)=>createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 const clickAXButton=async(cdp,name)=>{const {nodes}=await cdp.send('Accessibility.getFullAXTree');const node=nodes.find(n=>!n.ignored&&n.role?.value==='button'&&n.name?.value===name&&n.backendDOMNodeId);if(!node)throw new Error(`Accessible button not found: ${name}`);const resolved=await cdp.send('DOM.resolveNode',{backendNodeId:node.backendDOMNodeId});await cdp.send('Runtime.callFunctionOn',{objectId:resolved.object.objectId,functionDeclaration:'function(){this.click();}',returnByValue:true});};
+// Measure the landing at the phase change, while the exiting reel still exists.
+// Locator polling after the reveal can miss its short exit on slower CI hosts.
+const captureLanding=async page=>page.evaluate(()=>{
+ window.fixtureLandingOffset=null;const overlay=document.querySelector('.po-opening-overlay');
+ const observer=new MutationObserver(()=>{if(!overlay.classList.contains('po-phase-result'))return;
+  const marker=document.querySelector('.po-marker'),target=document.querySelector('[data-target-folio="true"]');
+  if(marker&&target){const a=marker.getBoundingClientRect(),b=target.getBoundingClientRect();window.fixtureLandingOffset=Math.abs(a.left+a.width/2-b.left-b.width/2);}
+  observer.disconnect();
+ });observer.observe(overlay,{attributes:true,attributeFilter:['class']});
+});
 const inventoryShadow=async cdp=>{const {result}=await cdp.send('Runtime.evaluate',{expression:"document.querySelector('.po-inventory-host')",returnByValue:false});if(!result.objectId)throw new Error('Inventory host was not found');const {node}=await cdp.send('DOM.describeNode',{objectId:result.objectId,depth:-1,pierce:true});const shadow=node.shadowRoots?.[0];if(!shadow?.backendNodeId)throw new Error(`Inventory shadow root was not found on ${node.nodeName}`);return (await cdp.send('DOM.resolveNode',{backendNodeId:shadow.backendNodeId})).object.objectId;};
 const inventoryEval=async(cdp,fn,arg)=>{const objectId=await inventoryShadow(cdp),result=await cdp.send('Runtime.callFunctionOn',{objectId,functionDeclaration:`function(arg){return (${fn.toString()})(this,arg)}`,arguments:arg===undefined?[]:[{value:arg}],returnByValue:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text??'Inventory evaluation failed');return result.result.value;};
 const readInventory=cdp=>inventoryEval(cdp,function(root){const page=root.querySelector('.po-inventory-page');if(!page)return null;return{title:page.querySelector('h1')?.textContent?.trim(),heading:page.querySelector('h2')?.textContent?.trim(),values:[...page.querySelectorAll('.po-grade-card-value')].map(n=>n.textContent.trim()),cardCount:page.querySelectorAll('.po-inventory-card').length,text:page.innerText};});
@@ -120,7 +130,7 @@ test('desktop and mobile fixture visuals, full reel and reduced motion',async({p
 });
 
 test('star is visible on its real reel card and lands at center without a second reveal',async({page})=>{
- await page.goto('http://127.0.0.1:5173/tester.html');await page.getByLabel('Cijfer').selectOption('*');await page.getByRole('button',{name:'Test opening',exact:true}).click();await page.getByRole('button',{name:'Open Cijfer',exact:true}).click();const lane=page.locator('.po-lane');await expect(lane).toBeVisible();await expect(page.locator('[data-target-folio="true"] .po-mystery-grade')).toHaveText('*');await expect(lane.locator('.po-mystery-grade').first()).toContainText(/\d/);await expect(page.locator('.po-grade')).toHaveCount(0);await expect(page.locator('.po-grade')).toHaveText('*',{timeout:9000});const offset=await page.evaluate(()=>{const marker=document.querySelector('.po-marker'),target=document.querySelector('[data-target-folio="true"]');if(!marker||!target)return Infinity;const a=marker.getBoundingClientRect(),b=target.getBoundingClientRect();return Math.abs(a.left+a.width/2-b.left-b.width/2);});expect(offset).toBeLessThan(1);await expect.poll(()=>page.locator('[data-target-folio="true"] .po-mystery-grade').textContent()).toBe('*');await expect(page.locator('.po-grade')).toHaveText('*',{timeout:5000});await expect(page.locator('.po-grade')).toHaveAttribute('aria-label','Cijfer *');await expect(page.locator('.po-grade .po-digit-strip')).toHaveCount(0);
+ await page.goto('http://127.0.0.1:5173/tester.html');await page.getByLabel('Cijfer').selectOption('*');await page.getByRole('button',{name:'Test opening',exact:true}).click();await page.getByRole('button',{name:'Open Cijfer',exact:true}).click();const lane=page.locator('.po-lane');await expect(lane).toBeVisible();await expect(page.locator('[data-target-folio="true"] .po-mystery-grade')).toHaveText('*');await expect(lane.locator('.po-mystery-grade').first()).toContainText(/\d/);await expect(page.locator('.po-grade')).toHaveCount(0);await captureLanding(page);await expect(page.locator('.po-grade')).toHaveText('*',{timeout:9000});const offset=await page.evaluate(()=>window.fixtureLandingOffset);expect(offset).toBeLessThan(1);await expect(page.locator('.po-grade')).toHaveText('*',{timeout:5000});await expect(page.locator('.po-grade')).toHaveAttribute('aria-label','Cijfer *');await expect(page.locator('.po-grade .po-digit-strip')).toHaveCount(0);
 });
 
 test('inventory is a native tab, protects only its route content, filters opened grades and survives browser history',async()=>{
@@ -199,9 +209,9 @@ test('mobile landing respects its CSS gap and Enter advances into the next subje
  await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:5173/tester.html');
  await page.getByLabel('Cijfer').selectOption('*');await page.getByLabel('Aantal').fill('2');
  await page.getByRole('button',{name:'Test opening',exact:true}).click();await expect(page.getByRole('button',{name:'Open Cijfer',exact:true})).toBeVisible();await page.keyboard.press('Enter');
- await expect(page.locator('.po-lane')).toBeVisible();
+ await expect(page.locator('.po-lane')).toBeVisible();await captureLanding(page);
  await expect(page.locator('.po-grade')).toHaveText('*',{timeout:9000});
- const offset=await page.evaluate(()=>{const marker=document.querySelector('.po-marker').getBoundingClientRect(),target=document.querySelector('[data-target-folio="true"]').getBoundingClientRect();return Math.abs(marker.left+marker.width/2-target.left-target.width/2);});
+ const offset=await page.evaluate(()=>window.fixtureLandingOffset);
  expect(offset).toBeLessThan(1);await expect(page.locator('.po-grade')).toHaveText('*');
  await page.keyboard.press('Enter');await expect(page.locator('.po-preview h2')).toHaveText('Nederlands');await expect(page.locator('.po-preview .po-grade')).toHaveCount(0);
  await page.keyboard.press('Escape');await expect(page.locator('.po-opening-overlay')).toHaveCount(0);
